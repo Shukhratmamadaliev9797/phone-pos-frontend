@@ -15,32 +15,6 @@ function money(n: number) {
   return `${Math.max(0, Math.round(n)).toLocaleString("en-US")} so'm`;
 }
 
-function customerBalanceBadge(
-  debt: number,
-  credit: number,
-  language: "en" | "uz",
-) {
-  if (debt > 0) {
-    return (
-      <Badge className="rounded-full bg-rose-500/15 text-rose-700 hover:bg-rose-500/15">
-        {language === "uz" ? "Qarzli" : "Debt"}
-      </Badge>
-    );
-  }
-  if (credit > 0) {
-    return (
-      <Badge className="rounded-full bg-amber-500/15 text-amber-700 hover:bg-amber-500/15">
-        {language === "uz" ? "Kreditli" : "Credit"}
-      </Badge>
-    );
-  }
-  return (
-    <Badge className="rounded-full bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/15">
-      {language === "uz" ? "Balans yo'q" : "Balanced"}
-    </Badge>
-  );
-}
-
 export function CustomerDetailsModal({
   open,
   onOpenChange,
