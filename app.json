@@ -1,0 +1,18 @@
+{
+  "name": "phone-shop-pos-frontend",
+  "description": "Vite React frontend for Phone Shop POS",
+  "stack": "heroku-24",
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ],
+  "env": {
+    "VITE_API_URL": {
+      "description": "Backend API base URL"
+    },
+    "NPM_CONFIG_PRODUCTION": {
+      "value": "false"
+    }
+  }
+}
