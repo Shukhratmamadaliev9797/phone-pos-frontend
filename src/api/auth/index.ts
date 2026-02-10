@@ -1,7 +1,7 @@
 import { baseApi } from "@/api";
 import { setAuth, clearAuth } from "@/store/slices/auth.slice";
 import { AUTH } from "@/api/path";
-import type { ApiUser } from "../type";
+import type { ApiUser } from "../types";
 
 // 🔄 Backend user modelini frontend auth user modeliga moslashtirish
 function toAuthUser(user: ApiUser) {
