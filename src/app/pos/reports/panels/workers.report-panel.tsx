@@ -23,7 +23,7 @@ export function WorkersReportPanel({ data }: { data: ReportsOverview }) {
         <MiniCard label={language === "uz" ? "Kutilayotgan to'lovlar" : "Pending payments"} value={money(data.workersPendingPayments)} />
       </div>
 
-      <Card className="rounded-3xl overflow-hidden">
+      <Card className="rounded-3xl overflow-hidden border-muted/40 bg-muted/30">
         <CardContent className="p-0">
           <div className="p-4">
             <div className="text-sm font-semibold">
@@ -81,7 +81,7 @@ export function WorkersReportPanel({ data }: { data: ReportsOverview }) {
 
 function MiniCard({ label, value }: { label: string; value: string }) {
   return (
-    <Card className="rounded-3xl">
+    <Card className="rounded-3xl border-muted/40 bg-muted/30">
       <CardContent className="pr-1">
         <div className="text-xs text-muted-foreground">{label}</div>
         <div className="mt-2 text-lg font-semibold">{value}</div>

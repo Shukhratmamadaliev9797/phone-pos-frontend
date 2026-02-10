@@ -35,7 +35,7 @@ export function HelpGuides({ role, guides }: HelpGuidesProps) {
   const { language } = useI18n();
   if (guides.length === 0) {
     return (
-      <Card className="rounded-3xl" id="guides">
+      <Card className="rounded-3xl border-muted/40 bg-muted/30" id="guides">
         <CardContent className="p-4 sm:p-6">
           <div className="text-sm text-muted-foreground">
             {language === "uz"
@@ -48,7 +48,7 @@ export function HelpGuides({ role, guides }: HelpGuidesProps) {
   }
 
   return (
-    <Card className="rounded-3xl" id="guides">
+    <Card className="rounded-3xl border-muted/40 bg-muted/30" id="guides">
       <CardContent className="p-4 sm:p-6">
         <div className="flex items-baseline justify-between gap-3">
           <div>

@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useI18n } from "@/lib/i18n/provider";
 
 export function InventoryPagination({
@@ -21,17 +20,18 @@ export function InventoryPagination({
 
   const canPrev = page > 1;
   const canNext = page < totalPages;
-
-  const start = (page - 1) * pageSize + 1;
-  const end = Math.min(page * pageSize, total);
+  const shown = Math.min(pageSize, Math.max(total - (page - 1) * pageSize, 0));
+  const pageNumbers = Array.from(
+    { length: Math.max(totalPages, 1) },
+    (_, index) => index + 1,
+  );
 
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="rounded-2xl border border-muted/40 bg-background/50 px-3 py-2">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="text-xs text-muted-foreground">
-        {language === "uz" ? "Ko'rsatilmoqda" : "Showing"}{" "}
-        <span className="font-medium text-foreground">{start}</span>–
-        <span className="font-medium text-foreground">{end}</span>{" "}
-        {language === "uz" ? "dan" : "of"}{" "}
+        {language === "uz" ? "Ko'rsatilgan" : "Showing"}{" "}
+        <span className="font-medium text-foreground">{shown}</span> /{" "}
         <span className="font-medium text-foreground">{total}</span>
       </div>
 
@@ -39,30 +39,38 @@ export function InventoryPagination({
         <Button
           variant="outline"
           size="sm"
-          className="rounded-2xl"
+          className="h-8 rounded-xl px-3"
           disabled={!canPrev}
           onClick={() => onPageChange(page - 1)}
         >
-          <ChevronLeft className="mr-1 h-4 w-4" />
           {language === "uz" ? "Oldingi" : "Prev"}
         </Button>
 
-        <div className="min-w-[80px] text-center text-xs text-muted-foreground">
-          {language === "uz" ? "Sahifa" : "Page"}{" "}
-          <span className="font-medium text-foreground">{page}</span> /{" "}
-          <span className="font-medium text-foreground">{totalPages}</span>
+        <div className="hidden items-center gap-1 sm:flex">
+          {pageNumbers.map((pageNumber) => (
+            <Button
+              key={pageNumber}
+              type="button"
+              variant={pageNumber === page ? "default" : "outline"}
+              size="sm"
+              className="h-8 min-w-8 rounded-xl px-2"
+              onClick={() => onPageChange(pageNumber)}
+            >
+              {pageNumber}
+            </Button>
+          ))}
         </div>
 
         <Button
           variant="outline"
           size="sm"
-          className="rounded-2xl"
+          className="h-8 rounded-xl px-3"
           disabled={!canNext}
           onClick={() => onPageChange(page + 1)}
         >
           {language === "uz" ? "Keyingi" : "Next"}
-          <ChevronRight className="ml-1 h-4 w-4" />
         </Button>
+      </div>
       </div>
     </div>
   );

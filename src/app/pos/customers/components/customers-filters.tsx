@@ -1,7 +1,7 @@
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Search, RotateCcw } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -27,34 +27,45 @@ export function CustomersFilters({
 }) {
   const { language } = useI18n();
   const tr = {
+    search: language === "uz" ? "Qidirish" : "Search",
     searchPlaceholder:
-      language === "uz" ? "Qidirish: telefon raqami, to'liq ism..." : "Search: phone number, full name...",
+      language === "uz"
+        ? "Qidirish: telefon raqami, to'liq ism..."
+        : "Search: phone number, full name...",
     show: language === "uz" ? "Ko'rsatish" : "Show",
     all: language === "uz" ? "Barchasi" : "All",
     withDebt: language === "uz" ? "Qarzli" : "With Debt",
     withCredit: language === "uz" ? "Kreditli" : "With Credit",
-    reset: language === "uz" ? "Tiklash" : "Reset",
+    reset: language === "uz" ? "Filtrlarni tiklash" : "Reset filters",
   };
 
   return (
-    <Card className="rounded-3xl">
-      <CardContent>
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-          <div className="flex-1">
+    <div className="rounded-2xl border border-muted/40 bg-muted/30 p-4">
+      <div className="flex flex-wrap items-end gap-4">
+        <div className="flex min-w-[240px] flex-1 flex-col gap-1">
+          <Label htmlFor="customerSearch">{tr.search}</Label>
+          <div className="relative">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
+              id="customerSearch"
               placeholder={tr.searchPlaceholder}
-              className="h-10 rounded-2xl"
+              className="pl-9"
               value={search}
               onChange={(event) => onSearchChange(event.target.value)}
             />
           </div>
+        </div>
 
-          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+        <div className="flex flex-wrap items-end gap-2">
+          <div className="flex min-w-[170px] flex-col gap-1">
+            <Label>{tr.show}</Label>
             <Select
               value={type}
-              onValueChange={(value) => onTypeChange(value as CustomerBalanceType)}
+              onValueChange={(value) =>
+                onTypeChange(value as CustomerBalanceType)
+              }
             >
-              <SelectTrigger className="h-10 w-[170px] rounded-2xl">
+              <SelectTrigger className="w-auto min-w-[170px]">
                 <SelectValue placeholder={tr.show} />
               </SelectTrigger>
               <SelectContent>
@@ -63,14 +74,19 @@ export function CustomersFilters({
                 <SelectItem value="credit">{tr.withCredit}</SelectItem>
               </SelectContent>
             </Select>
-
-            <Button variant="outline" className="h-10 rounded-2xl" type="button" onClick={onReset}>
-              <X className="mr-2 h-4 w-4" />
-              {tr.reset}
-            </Button>
           </div>
+
+          <Button
+            variant="outline"
+            className="h-10 px-3"
+            title={tr.reset}
+            type="button"
+            onClick={onReset}
+          >
+            <RotateCcw className="h-4 w-4" />
+          </Button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

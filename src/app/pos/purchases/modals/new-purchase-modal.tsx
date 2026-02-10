@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import { Plus, Trash2, Save } from 'lucide-react'
+import { Save } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import {
   type CreatePurchasePayload,
@@ -81,10 +81,6 @@ export function NewPurchaseModal({
       return
     }
   }, [open])
-  const addItem = () => setItems((prev) => [...prev, emptyPhone()])
-  const removeItem = (index: number) =>
-    setItems((prev) => prev.filter((_, itemIndex) => itemIndex !== index))
-
   const updateItem = <K extends keyof PhoneItemDraft>(
     index: number,
     key: K,
@@ -103,8 +99,8 @@ export function NewPurchaseModal({
       return
     }
 
-    if (items.length === 0) {
-      setError('At least one item is required')
+    if (items.length !== 1) {
+      setError(language === 'uz' ? "Bitta xaridda faqat bitta telefon bo'ladi" : 'Only one phone is allowed per purchase')
       return
     }
 
@@ -203,7 +199,7 @@ export function NewPurchaseModal({
         onOpenChange(value)
       }}
     >
-      <DialogContent className="max-w-5xl w-[min(92vw,64rem)] h-[90vh] p-0 overflow-hidden rounded-3xl">
+      <DialogContent className="max-w-6xl w-[min(94vw,72rem)] h-[90vh] p-0 overflow-hidden rounded-3xl">
         <div className="flex h-full min-h-0 flex-col">
           <div className="border-b p-6">
             <DialogHeader>
@@ -222,23 +218,11 @@ export function NewPurchaseModal({
                 <CardTitle className="text-base">
                   {language === 'uz' ? 'Telefonlar' : 'Phone items'}
                 </CardTitle>
-                <Button size="sm" className="rounded-2xl" onClick={addItem} type="button">
-                  <Plus className="mr-2 h-4 w-4" /> {language === 'uz' ? "Telefon qo'shish" : 'Add phone'}
-                </Button>
               </CardHeader>
 
               <CardContent className="space-y-4">
                 {items.map((item, index) => (
-                  <div key={index} className="rounded-2xl border p-4 space-y-4">
-                    <div className="flex justify-between">
-                      <span className="text-sm font-semibold">Item #{index + 1}</span>
-                      {items.length > 1 ? (
-                        <Button variant="ghost" size="icon" onClick={() => removeItem(index)} type="button">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      ) : null}
-                    </div>
-
+                  <div key={index} className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-1">
                         <Label>Brand</Label>

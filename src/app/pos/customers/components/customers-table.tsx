@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { Card, CardContent} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -16,7 +16,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Eye, MoreHorizontal, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Eye,
+  MoreHorizontal,
+  Pencil,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import type { CustomerBalanceRow } from "@/lib/api/customers";
 import { useI18n } from "@/lib/i18n/provider";
 
@@ -56,6 +62,60 @@ function creditBadge(v: number) {
   );
 }
 
+function customerTypeBadge(row: CustomerRow, language: "en" | "uz") {
+  const hasBought = Boolean(row.purchasedPhones && row.purchasedPhones !== "—");
+  const hasSold = Boolean(row.soldPhones && row.soldPhones !== "—");
+
+  if (hasBought && hasSold) {
+    return (
+      <Badge className="rounded-full bg-sky-500/15 text-sky-700 hover:bg-sky-500/15">
+        {language === "uz" ? "Sotib olgan va sotgan" : "Bought & Sold"}
+      </Badge>
+    );
+  }
+
+  if (hasBought) {
+    return (
+      <Badge className="rounded-full bg-amber-500/15 text-amber-700 hover:bg-amber-500/15">
+        {language === "uz" ? "Sotib olgan" : "Bought"}
+      </Badge>
+    );
+  }
+
+  return (
+    <Badge className="rounded-full bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/15">
+      {language === "uz" ? "Sotgan" : "Sold"}
+    </Badge>
+  );
+}
+
+function balanceStatusBadge(row: CustomerRow, language: "en" | "uz") {
+  const hasDebt = row.debt > 0;
+  const hasCredit = row.credit > 0;
+
+  if (hasDebt && hasCredit) {
+    return (
+      <Badge className="rounded-full bg-amber-500/15 text-amber-700 hover:bg-amber-500/15">
+        {language === "uz" ? "Aralash" : "Mixed"}
+      </Badge>
+    );
+  }
+
+  if (hasDebt) {
+    return (
+      <Badge className="rounded-full bg-rose-500/15 text-rose-700 hover:bg-rose-500/15">
+        {language === "uz" ? "Qarz" : "Debt"}
+      </Badge>
+    );
+  }
+
+  return (
+    <Badge className="rounded-full bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/15">
+      {language === "uz" ? "Kredit" : "Credit"}
+    </Badge>
+  );
+}
+
 export function CustomersTable({
   rows,
   loading,
@@ -83,19 +143,36 @@ export function CustomersTable({
 }) {
   const { language } = useI18n();
   return (
-    <Card className="rounded-3xl">
-
-      <CardContent className="p-0">
+    <Card className="rounded-3xl border-muted/40 bg-muted/30">
+      <CardContent className="p-1">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{language === "uz" ? "Mijoz" : "Customer"}</TableHead>
-                <TableHead className="min-w-[220px]">{language === "uz" ? "Telefonlar" : "Phones"}</TableHead>
-                <TableHead className="whitespace-nowrap">{language === "uz" ? "Qarz" : "Debt"}</TableHead>
-                <TableHead className="whitespace-nowrap">{language === "uz" ? "Kredit" : "Credit"}</TableHead>
-                <TableHead className="whitespace-nowrap">{language === "uz" ? "Jami to'lov" : "Total due"}</TableHead>
-                <TableHead className="whitespace-nowrap">{language === "uz" ? "Oxirgi to'lov" : "Last payment"}</TableHead>
+                <TableHead className="whitespace-nowrap py-2">
+                  {language === "uz" ? "Turi" : "Type"}
+                </TableHead>
+                <TableHead className="py-2">
+                  {language === "uz" ? "Mijoz" : "Customer"}
+                </TableHead>
+                <TableHead className="min-w-[220px] py-2">
+                  {language === "uz" ? "Telefonlar" : "Phones"}
+                </TableHead>
+                <TableHead className="whitespace-nowrap py-2">
+                  {language === "uz" ? "Dokon Qarz" : "Shop Debt"}
+                </TableHead>
+                <TableHead className="whitespace-nowrap py-2">
+                  {language === "uz" ? "Mijoz Qarz" : "Customer Debt"}
+                </TableHead>
+                <TableHead className="whitespace-nowrap py-2">
+                  {language === "uz" ? "Holat" : "Status"}
+                </TableHead>
+                <TableHead className="whitespace-nowrap py-2">
+                  {language === "uz" ? "Jami to'lov" : "Total due"}
+                </TableHead>
+                <TableHead className="whitespace-nowrap py-2">
+                  {language === "uz" ? "Oxirgi to'lov" : "Last payment"}
+                </TableHead>
                 <TableHead className="w-[60px]" />
               </TableRow>
             </TableHeader>
@@ -104,10 +181,13 @@ export function CustomersTable({
               {rows.map((r) => (
                 <TableRow
                   key={r.customer.id}
-                  className="cursor-pointer"
+                  className="cursor-pointer border-b border-muted/40 last:border-b-0"
                   onClick={() => onRowClick?.(r)}
                 >
-                  <TableCell className="min-w-[260px]">
+                  <TableCell className="whitespace-nowrap py-2">
+                    {customerTypeBadge(r, language)}
+                  </TableCell>
+                  <TableCell className="min-w-[260px] py-2">
                     <div className="text-sm font-semibold">
                       {r.customer.fullName || "—"}
                     </div>
@@ -116,25 +196,34 @@ export function CustomersTable({
                     </div>
                   </TableCell>
 
-                  <TableCell className="min-w-[220px] text-xs text-muted-foreground">
+                  <TableCell className="min-w-[220px] py-2 text-xs text-muted-foreground">
                     <div>
-                      <span className="font-medium text-foreground">{language === "uz" ? "Sotilgan:" : "Sold:"}</span>{" "}
+                      <span className="font-medium text-foreground">
+                        {language === "uz" ? "Sotilgan:" : "Sold:"}
+                      </span>{" "}
                       {r.soldPhones || "—"}
                     </div>
                     <div>
-                      <span className="font-medium text-foreground">{language === "uz" ? "Sotib olingan:" : "Bought:"}</span>{" "}
+                      <span className="font-medium text-foreground">
+                        {language === "uz" ? "Sotib olingan:" : "Bought:"}
+                      </span>{" "}
                       {r.purchasedPhones || "—"}
                     </div>
                   </TableCell>
 
-                  <TableCell>{debtBadge(r.debt)}</TableCell>
-                  <TableCell>{creditBadge(r.credit)}</TableCell>
+                  <TableCell className="py-2">{debtBadge(r.debt)}</TableCell>
+                  <TableCell className="py-2">
+                    {creditBadge(r.credit)}
+                  </TableCell>
+                  <TableCell className="py-2">
+                    {balanceStatusBadge(r, language)}
+                  </TableCell>
 
-                  <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                  <TableCell className="whitespace-nowrap py-2 text-sm text-muted-foreground">
                     {money(r.totalDue ?? r.debt + r.credit)}
                   </TableCell>
 
-                  <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                  <TableCell className="whitespace-nowrap py-2 text-sm text-muted-foreground">
                     {r.lastPaymentAmount !== undefined
                       ? `${money(r.lastPaymentAmount)}${
                           r.lastPaymentAt
@@ -147,7 +236,11 @@ export function CustomersTable({
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="rounded-2xl">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="rounded-2xl"
+                        >
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -155,12 +248,16 @@ export function CustomersTable({
                       <DropdownMenuContent align="end" className="w-52">
                         <DropdownMenuItem onClick={() => onViewDetails?.(r)}>
                           <Eye className="mr-2 h-4 w-4" />
-                          {language === "uz" ? "Batafsil ko'rish" : "View details"}
+                          {language === "uz"
+                            ? "Batafsil ko'rish"
+                            : "View details"}
                         </DropdownMenuItem>
                         {canManage ? (
                           <DropdownMenuItem onClick={() => onEdit?.(r)}>
                             <Pencil className="mr-2 h-4 w-4" />
-                            {language === "uz" ? "Mijozni tahrirlash" : "Edit customer"}
+                            {language === "uz"
+                              ? "Mijozni tahrirlash"
+                              : "Edit customer"}
                           </DropdownMenuItem>
                         ) : null}
                       </DropdownMenuContent>
@@ -171,16 +268,27 @@ export function CustomersTable({
 
               {!loading && rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
-                    {error ?? (language === "uz" ? "Mijozlar topilmadi." : "No customers found.")}
+                  <TableCell
+                    colSpan={9}
+                    className="py-10 text-center text-sm text-muted-foreground"
+                  >
+                    {error ??
+                      (language === "uz"
+                        ? "Mijozlar topilmadi."
+                        : "No customers found.")}
                   </TableCell>
                 </TableRow>
               ) : null}
 
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
-                    {language === "uz" ? "Mijozlar yuklanmoqda..." : "Loading customers..."}
+                  <TableCell
+                    colSpan={9}
+                    className="py-10 text-center text-sm text-muted-foreground"
+                  >
+                    {language === "uz"
+                      ? "Mijozlar yuklanmoqda..."
+                      : "Loading customers..."}
                   </TableCell>
                 </TableRow>
               ) : null}

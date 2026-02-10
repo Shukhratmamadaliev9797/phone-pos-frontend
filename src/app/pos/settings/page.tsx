@@ -222,7 +222,7 @@ export default function SettingsPage() {
           </p>
         </div>
 
-        <div className="rounded-2xl border bg-card px-4 py-2 text-sm">
+        <div className="rounded-2xl border border-muted/40 bg-muted/30 px-4 py-2 text-sm">
           <div className="font-medium">Admin</div>
           <div className="text-muted-foreground">
             {authUser?.name ?? "Current user"}
@@ -231,7 +231,7 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <Card className="rounded-3xl">
+      <Card className="rounded-3xl border-muted/40 bg-muted/30">
         <CardHeader>
           <CardTitle>Appearance</CardTitle>
           <CardDescription>Choose light or dark mode for entire app</CardDescription>
@@ -274,7 +274,7 @@ export default function SettingsPage() {
 
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
-          <Card className="rounded-3xl">
+          <Card className="rounded-3xl border-muted/40 bg-muted/30">
             <CardHeader>
               <CardTitle>Store Profile</CardTitle>
               <CardDescription>
@@ -332,7 +332,7 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          <Card className="rounded-3xl">
+          <Card className="rounded-3xl border-muted/40 bg-muted/30">
             <CardHeader>
               <CardTitle>Admin Details</CardTitle>
               <CardDescription>Update current admin login email and password.</CardDescription>
@@ -391,7 +391,7 @@ export default function SettingsPage() {
         </div>
 
         <div className="space-y-4">
-          <Card className="rounded-3xl">
+          <Card className="rounded-3xl border-muted/40 bg-muted/30">
             <CardHeader>
               <CardTitle>System</CardTitle>
               <CardDescription>Operational preferences overview</CardDescription>

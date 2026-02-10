@@ -1,4 +1,3 @@
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -77,8 +76,12 @@ export function SalesTable({
   rows,
   loading,
   error,
+  page,
+  totalPages,
+  total,
   canManage,
   canDelete,
+  onPageChange,
   onRowClick,
   onViewDetails,
   onEdit,
@@ -88,8 +91,12 @@ export function SalesTable({
   rows: SaleRow[];
   loading?: boolean;
   error?: string | null;
+  page: number;
+  totalPages: number;
+  total: number;
   canManage: boolean;
   canDelete: boolean;
+  onPageChange: (nextPage: number) => void;
   onRowClick?: (row: SaleRow) => void;
   onViewDetails?: (row: SaleRow) => void;
   onEdit?: (row: SaleRow) => void;
@@ -97,12 +104,15 @@ export function SalesTable({
   onDelete?: (row: SaleRow) => void;
 }) {
   const { language } = useI18n();
+  const shown = rows.length;
+  const pageNumbers = Array.from(
+    { length: Math.max(totalPages, 1) },
+    (_, index) => index + 1,
+  );
   return (
-    <Card className="rounded-3xl">
-     
-      <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <Table>
+    <div className="rounded-3xl border border-muted/40 bg-muted/30 p-2">
+      <div className="overflow-x-auto">
+        <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="whitespace-nowrap">{language === "uz" ? "Sana" : "Date"}</TableHead>
@@ -214,9 +224,57 @@ export function SalesTable({
                 </TableRow>
               )}
             </TableBody>
-          </Table>
+        </Table>
+      </div>
+
+      {totalPages > 1 ? (
+        <div className="mt-2 flex flex-col gap-3 rounded-2xl border border-muted/40 bg-background/50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-xs text-muted-foreground">
+            {language === "uz" ? "Ko'rsatilgan" : "Showing"}{" "}
+            <span className="font-medium text-foreground">{shown}</span> /{" "}
+            <span className="font-medium text-foreground">{total}</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 rounded-xl px-3"
+              disabled={page <= 1}
+              onClick={() => onPageChange(page - 1)}
+            >
+              {language === "uz" ? "Oldingi" : "Prev"}
+            </Button>
+
+            <div className="hidden items-center gap-1 sm:flex">
+              {pageNumbers.map((pageNumber) => (
+                <Button
+                  key={pageNumber}
+                  type="button"
+                  variant={pageNumber === page ? "default" : "outline"}
+                  size="sm"
+                  className="h-8 min-w-8 rounded-xl px-2"
+                  onClick={() => onPageChange(pageNumber)}
+                >
+                  {pageNumber}
+                </Button>
+              ))}
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 rounded-xl px-3"
+              disabled={page >= totalPages}
+              onClick={() => onPageChange(page + 1)}
+            >
+              {language === "uz" ? "Keyingi" : "Next"}
+            </Button>
+          </div>
         </div>
-      </CardContent>
-    </Card>
+      ) : null}
+    </div>
   );
 }

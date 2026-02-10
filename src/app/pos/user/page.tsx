@@ -41,7 +41,7 @@ export default function UserProfilePage() {
         </p>
       </div>
 
-      <Card className="rounded-3xl">
+      <Card className="rounded-3xl border-muted/40 bg-muted/30">
         <CardContent className="p-6 space-y-6">
           {/* Top summary */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -66,7 +66,7 @@ export default function UserProfilePage() {
             </div>
 
             {/* Info note */}
-            <div className="max-w-sm rounded-3xl border bg-muted/10 p-4 text-sm text-muted-foreground">
+            <div className="max-w-sm rounded-3xl border border-muted/40 bg-muted/30 p-4 text-sm text-muted-foreground">
               {isAdmin ? (
                 <>{t("user.adminNote")}</>
               ) : (
@@ -79,27 +79,27 @@ export default function UserProfilePage() {
 
           {/* Details */}
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="rounded-3xl border p-4">
+            <div className="rounded-3xl border border-muted/40 bg-muted/30 p-4">
               <div className="text-xs text-muted-foreground">{t("user.fullName")}</div>
               <div className="mt-1 font-medium">{user.name}</div>
             </div>
 
-            <div className="rounded-3xl border p-4">
+            <div className="rounded-3xl border border-muted/40 bg-muted/30 p-4">
               <div className="text-xs text-muted-foreground">{t("user.role")}</div>
               <div className="mt-1 font-medium">{roleLabel}</div>
             </div>
 
-            <div className="rounded-3xl border p-4">
+            <div className="rounded-3xl border border-muted/40 bg-muted/30 p-4">
               <div className="text-xs text-muted-foreground">{t("user.email")}</div>
               <div className="mt-1 font-medium">{user.email}</div>
             </div>
 
-            <div className="rounded-3xl border p-4">
+            <div className="rounded-3xl border border-muted/40 bg-muted/30 p-4">
               <div className="text-xs text-muted-foreground">{t("user.phone")}</div>
               <div className="mt-1 font-medium">{user.phone}</div>
             </div>
 
-            <div className="rounded-3xl border p-4 sm:col-span-2">
+            <div className="rounded-3xl border border-muted/40 bg-muted/30 p-4 sm:col-span-2">
               <div className="text-xs text-muted-foreground">{t("user.accessNoteTitle")}</div>
               <div className="mt-1 text-sm text-muted-foreground">
                 {t("user.accessNoteBody")}

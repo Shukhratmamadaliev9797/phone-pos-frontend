@@ -15,9 +15,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react'
+import { MoreHorizontal } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { PurchaseListItem } from '@/lib/api/purchases'
+import { useI18n } from '@/lib/i18n/provider'
 
 function money(n: string | number) {
   const value = typeof n === 'number' ? n : Number(n)
@@ -96,8 +97,15 @@ export function PurchasesTable({
   onEdit: (row: PurchaseListItem) => void
   onDelete: (row: PurchaseListItem) => void
 }) {
+  const { language } = useI18n()
+  const shown = rows.length
+  const pageNumbers = Array.from(
+    { length: Math.max(totalPages, 1) },
+    (_, index) => index + 1,
+  )
+
   return (
-    <div className="rounded-3xl border bg-card p-2">
+    <div className="rounded-3xl border border-muted/40 bg-muted/30 p-2">
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
@@ -206,37 +214,47 @@ export function PurchasesTable({
       </div>
 
       {totalPages > 1 ? (
-        <div className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-2 flex flex-col gap-3 rounded-2xl border border-muted/40 bg-background/50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="text-xs text-muted-foreground">
-            Total <span className="font-medium text-foreground">{total}</span> records
+            {language === 'uz' ? "Ko'rsatilgan" : 'Showing'}{' '}
+            <span className="font-medium text-foreground">{shown}</span> /{' '}
+            <span className="font-medium text-foreground">{total}</span>
           </div>
 
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
-              className="rounded-2xl"
+              className="h-8 rounded-xl px-3"
               disabled={page <= 1}
               onClick={() => onPageChange(Math.max(1, page - 1))}
             >
-              <ChevronLeft className="mr-1 h-4 w-4" />
-              Prev
+              {language === 'uz' ? 'Oldingi' : 'Prev'}
             </Button>
 
-            <div className="min-w-[80px] text-center text-xs text-muted-foreground">
-              Page <span className="font-medium text-foreground">{page}</span> /{' '}
-              <span className="font-medium text-foreground">{totalPages}</span>
+            <div className="hidden items-center gap-1 sm:flex">
+              {pageNumbers.map((pageNumber) => (
+                <Button
+                  key={pageNumber}
+                  type="button"
+                  variant={pageNumber === page ? 'default' : 'outline'}
+                  size="sm"
+                  className="h-8 min-w-8 rounded-xl px-2"
+                  onClick={() => onPageChange(pageNumber)}
+                >
+                  {pageNumber}
+                </Button>
+              ))}
             </div>
 
             <Button
               variant="outline"
               size="sm"
-              className="rounded-2xl"
+              className="h-8 rounded-xl px-3"
               disabled={page >= totalPages}
               onClick={() => onPageChange(Math.min(totalPages, page + 1))}
             >
-              Next
-              <ChevronRight className="ml-1 h-4 w-4" />
+              {language === 'uz' ? 'Keyingi' : 'Next'}
             </Button>
           </div>
         </div>

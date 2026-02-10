@@ -25,7 +25,7 @@ export function CustomersReportPanel({ data }: { data: ReportsOverview }) {
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <Card className="rounded-3xl overflow-hidden">
+      <Card className="rounded-3xl overflow-hidden border-muted/40 bg-muted/30">
         <CardContent className="p-0">
           <div className="p-4">
             <div className="text-sm font-semibold">
@@ -78,7 +78,7 @@ export function CustomersReportPanel({ data }: { data: ReportsOverview }) {
         </CardContent>
       </Card>
 
-      <Card className="rounded-3xl overflow-hidden">
+      <Card className="rounded-3xl overflow-hidden border-muted/40 bg-muted/30">
         <CardContent className="p-0">
           <div className="p-4">
             <div className="text-sm font-semibold">

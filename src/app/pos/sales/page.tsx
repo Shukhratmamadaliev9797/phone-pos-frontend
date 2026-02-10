@@ -264,8 +264,12 @@ export default function Sales() {
         rows={filteredRows}
         loading={loading}
         error={error}
+        page={page}
+        totalPages={totalPages}
+        total={total}
         canManage={canManage}
         canDelete={canDelete}
+        onPageChange={setPage}
         onRowClick={(row) => {
           void openDetails(row);
         }}
@@ -310,29 +314,6 @@ export default function Sales() {
           void handleDelete(row);
         }}
       />
-
-      <div className="flex justify-end text-xs text-muted-foreground">
-        Page {page} / {totalPages} • {filteredRows.length} shown • {total} total
-      </div>
-
-      <div className="flex justify-end gap-2">
-        <button
-          type="button"
-          className="rounded-xl border px-3 py-1 text-sm disabled:opacity-50"
-          disabled={page <= 1}
-          onClick={() => setPage((prev) => prev - 1)}
-        >
-          Prev
-        </button>
-        <button
-          type="button"
-          className="rounded-xl border px-3 py-1 text-sm disabled:opacity-50"
-          disabled={page >= totalPages}
-          onClick={() => setPage((prev) => prev + 1)}
-        >
-          Next
-        </button>
-      </div>
 
       <SaleDetailsModal
         open={detailsOpen}

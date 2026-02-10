@@ -17,7 +17,7 @@ export function ReportsPageHeader({
   const { language } = useI18n();
 
   return (
-    <Card className="rounded-3xl">
+    <Card className="rounded-3xl border-muted/40 bg-muted/30">
       <CardContent>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>

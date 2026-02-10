@@ -187,6 +187,10 @@ export default function RepairsPage() {
     void loadInventory("");
   }, [newOpen, loadInventory]);
 
+  const handleSearchInventory = React.useCallback((value: string) => {
+    void loadInventory(value);
+  }, [loadInventory]);
+
   if (!canView) {
     return <Navigate to="/errors/forbidden" replace />;
   }
@@ -376,9 +380,7 @@ export default function RepairsPage() {
         availableItems={inventory}
         inventoryLoading={inventoryLoading}
         inventoryError={inventoryError}
-        onSearchInventory={(value) => {
-          void loadInventory(value);
-        }}
+        onSearchInventory={handleSearchInventory}
         onSubmit={handleCreate}
         currentUserId={Number.isFinite(currentUserId) ? currentUserId : undefined}
       />

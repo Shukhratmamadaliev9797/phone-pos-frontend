@@ -62,7 +62,7 @@ export function RecentPurchasesCard({
 }) {
   const { language } = useI18n();
   return (
-    <Card className="rounded-3xl">
+    <Card className="rounded-3xl border-muted/40 bg-muted/30">
       <CardHeader className="flex flex-row items-start justify-between gap-4">
         <div>
           <CardTitle className="text-base">

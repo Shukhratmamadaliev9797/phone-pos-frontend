@@ -26,7 +26,7 @@ export function HelpSearch({ value, onChange }: HelpSearchProps) {
         ];
 
   return (
-    <Card className="rounded-3xl">
+    <Card className="rounded-3xl border-muted/40 bg-muted/30">
       <CardContent className="p-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
           <div className="relative flex-1">

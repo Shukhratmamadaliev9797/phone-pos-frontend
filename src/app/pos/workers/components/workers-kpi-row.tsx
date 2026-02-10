@@ -31,7 +31,7 @@ export function WorkersKpiRow({ rows }: { rows: WorkerRow[] }) {
 
 function Kpi({ label, value }: { label: string; value: string }) {
   return (
-    <Card className="rounded-3xl">
+    <Card className="rounded-3xl border-muted/40 bg-muted/30">
       <CardContent className="pr-1">
         <div className="text-xs text-muted-foreground">{label}</div>
         <div className="mt-2 text-xl font-semibold">{value}</div>

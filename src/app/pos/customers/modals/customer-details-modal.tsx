@@ -15,6 +15,32 @@ function money(n: number) {
   return `${Math.max(0, Math.round(n)).toLocaleString("en-US")} so'm`;
 }
 
+function customerBalanceBadge(
+  debt: number,
+  credit: number,
+  language: "en" | "uz",
+) {
+  if (debt > 0) {
+    return (
+      <Badge className="rounded-full bg-rose-500/15 text-rose-700 hover:bg-rose-500/15">
+        {language === "uz" ? "Qarzli" : "Debt"}
+      </Badge>
+    );
+  }
+  if (credit > 0) {
+    return (
+      <Badge className="rounded-full bg-amber-500/15 text-amber-700 hover:bg-amber-500/15">
+        {language === "uz" ? "Kreditli" : "Credit"}
+      </Badge>
+    );
+  }
+  return (
+    <Badge className="rounded-full bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/15">
+      {language === "uz" ? "Balans yo'q" : "Balanced"}
+    </Badge>
+  );
+}
+
 export function CustomerDetailsModal({
   open,
   onOpenChange,
@@ -75,14 +101,19 @@ export function CustomerDetailsModal({
 
         <div className="space-y-5">
           <div className="flex flex-wrap gap-2">
-            <Badge className="rounded-full bg-rose-500/15 text-rose-700 hover:bg-rose-500/15">
-              {language === "uz" ? "Qarz" : "Debt"}: {money(debt)}
-            </Badge>
-            <Badge className="rounded-full bg-amber-500/15 text-amber-700 hover:bg-amber-500/15">
-              {language === "uz" ? "Kredit" : "Credit"}: {money(credit)}
-            </Badge>
+            {debt > 0 ? (
+              <Badge className="rounded-full bg-rose-500/15 text-rose-700 hover:bg-rose-500/15">
+                {language === "uz" ? "Dokon Qarz" : "Shop Debt"}: {money(debt)}
+              </Badge>
+            ) : (
+              <Badge className="rounded-full bg-amber-500/15 text-amber-700 hover:bg-amber-500/15">
+                {language === "uz" ? "Mijoz Qarz" : "Customer Debt"}:{" "}
+                {money(credit)}
+              </Badge>
+            )}
             <Badge className="rounded-full bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/15">
-              {language === "uz" ? "Jami to'lov" : "Total due"}: {money(totalDue)}
+              {language === "uz" ? "Jami to'lov" : "Total due"}:{" "}
+              {money(totalDue)}
             </Badge>
           </div>
 
@@ -93,28 +124,27 @@ export function CustomerDetailsModal({
               <div className="text-xs text-muted-foreground">
                 {language === "uz" ? "To'liq ism" : "Full name"}
               </div>
-              <div className="text-sm font-medium">{details.fullName || "—"}</div>
+              <div className="text-sm font-medium">
+                {details.fullName || "—"}
+              </div>
             </div>
 
             <div className="rounded-2xl border bg-muted/10 p-4">
               <div className="text-xs text-muted-foreground">
                 {language === "uz" ? "Telefon" : "Phone"}
               </div>
-              <div className="text-sm font-medium">{details.phoneNumber || "—"}</div>
+              <div className="text-sm font-medium">
+                {details.phoneNumber || "—"}
+              </div>
             </div>
 
-            <div className="rounded-2xl border bg-muted/10 p-4">
+            <div className="rounded-2xl border bg-muted/10 p-4 sm:col-span-2">
               <div className="text-xs text-muted-foreground">
                 {language === "uz" ? "Manzil" : "Address"}
               </div>
-              <div className="text-sm font-medium">{details.address || "—"}</div>
-            </div>
-
-            <div className="rounded-2xl border bg-muted/10 p-4">
-              <div className="text-xs text-muted-foreground">
-                {language === "uz" ? "Passport ID" : "Passport ID"}
+              <div className="text-sm font-medium break-words whitespace-normal">
+                {details.address || "—"}
               </div>
-              <div className="text-sm font-medium">{details.passportId || "—"}</div>
             </div>
           </div>
 
@@ -131,11 +161,15 @@ export function CustomerDetailsModal({
             </div>
             <div className="mt-2 text-sm">
               <div>
-                <span className="font-medium">{language === "uz" ? "Sotilgan:" : "Sold:"}</span>{" "}
+                <span className="font-medium">
+                  {language === "uz" ? "Sotilgan:" : "Sold:"}
+                </span>{" "}
                 {soldPhones || "—"}
               </div>
               <div>
-                <span className="font-medium">{language === "uz" ? "Sotib olingan:" : "Bought:"}</span>{" "}
+                <span className="font-medium">
+                  {language === "uz" ? "Sotib olingan:" : "Bought:"}
+                </span>{" "}
                 {purchasedPhones || "—"}
               </div>
             </div>
@@ -152,7 +186,10 @@ export function CustomerDetailsModal({
                 </div>
               ) : (
                 activities.map((activity, index) => (
-                  <div key={`${activity.type}-${activity.paidAt}-${index}`} className="rounded-xl border bg-background p-3 text-sm">
+                  <div
+                    key={`${activity.type}-${activity.paidAt}-${index}`}
+                    className="rounded-xl border bg-background p-3 text-sm"
+                  >
                     <div className="font-medium">
                       {activity.type === "SALE_PAYMENT"
                         ? language === "uz"
@@ -161,13 +198,14 @@ export function CustomerDetailsModal({
                         : language === "uz"
                           ? "Xarid to'lovi"
                           : "Purchase payment"}
-                      :{" "}
-                      {money(activity.amount)}
+                      : {money(activity.amount)}
                     </div>
                     <div className="text-xs text-muted-foreground">
                       {new Date(activity.paidAt).toLocaleString()}
                     </div>
-                    <div className="text-xs text-muted-foreground">{activity.notes || "—"}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {activity.notes || "—"}
+                    </div>
                   </div>
                 ))
               )}
@@ -181,7 +219,9 @@ export function CustomerDetailsModal({
                 className="rounded-2xl mr-2"
                 onClick={() => onAddSalePayment?.(targetSaleId)}
               >
-                {language === "uz" ? "To'lov qo'shish (Sotuv)" : "Add payment (Sale)"}
+                {language === "uz"
+                  ? "To'lov qo'shish (Sotuv)"
+                  : "Add payment (Sale)"}
               </Button>
             ) : null}
             {canManage && targetPurchaseId ? (
@@ -190,7 +230,9 @@ export function CustomerDetailsModal({
                 className="rounded-2xl mr-2"
                 onClick={() => onAddPurchasePayment?.(targetPurchaseId)}
               >
-                {language === "uz" ? "To'lov qo'shish (Xarid)" : "Add payment (Purchase)"}
+                {language === "uz"
+                  ? "To'lov qo'shish (Xarid)"
+                  : "Add payment (Purchase)"}
               </Button>
             ) : null}
             {canManage && targetSaleId ? (
@@ -211,7 +253,11 @@ export function CustomerDetailsModal({
                 {language === "uz" ? "Xaridni tahrirlash" : "Edit Purchase"}
               </Button>
             ) : null}
-            <Button variant="outline" className="rounded-2xl" onClick={() => onOpenChange(false)}>
+            <Button
+              variant="outline"
+              className="rounded-2xl"
+              onClick={() => onOpenChange(false)}
+            >
               {language === "uz" ? "Yopish" : "Close"}
             </Button>
           </div>

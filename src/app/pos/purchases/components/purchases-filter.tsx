@@ -81,7 +81,7 @@ export function PurchasesFilters({
   };
 
   return (
-    <div className="rounded-2xl border bg-card p-4">
+    <div className="rounded-2xl border border-muted/40 bg-muted/30 p-4">
       <div className="flex flex-wrap items-end gap-4">
         <div className="flex min-w-[240px] flex-1 flex-col gap-1">
           <Label htmlFor="purchaseSearch">{tr.search}</Label>

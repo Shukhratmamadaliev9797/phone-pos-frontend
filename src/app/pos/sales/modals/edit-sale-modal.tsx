@@ -12,8 +12,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Save, Trash2 } from "lucide-react";
+import { Save, Trash2, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   listAvailableSaleItems,
   type AvailableSaleItem,
@@ -54,6 +55,7 @@ export function EditSaleModal({
   const [inventory, setInventory] = React.useState<AvailableSaleItem[]>([]);
   const [query, setQuery] = React.useState("");
   const [inventoryLoading, setInventoryLoading] = React.useState(false);
+  const [itemsOpen, setItemsOpen] = React.useState(false);
 
   const [cart, setCart] = React.useState<CartItem[]>([]);
   const [customerFullName, setCustomerFullName] = React.useState("");
@@ -249,50 +251,79 @@ export function EditSaleModal({
 
           <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-6">
             <div className="rounded-3xl border p-4">
-              <div className="flex items-center justify-between gap-2">
-                <div className="text-sm font-semibold">
-                  {language === "uz" ? "Mavjud inventar" : "Available inventory"}
-                </div>
-                <Input
-                  className="h-9 rounded-2xl w-[300px]"
-                  placeholder={
-                    language === "uz"
-                      ? "IMEI / brand / model bo'yicha qidiring..."
-                      : "Search IMEI / brand / model..."
-                  }
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                />
-              </div>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                {inventoryLoading ? (
-                  <div className="sm:col-span-2 rounded-2xl border p-6 text-center text-sm text-muted-foreground">
-                    {language === "uz" ? "Inventar yuklanmoqda..." : "Loading inventory..."}
-                  </div>
-                ) : null}
-                {!inventoryLoading
-                  ? availableRows.map((item) => (
-                      <div key={item.id} className="rounded-2xl border bg-muted/10 p-4">
-                        <p className="text-sm font-semibold">
-                          {item.brand} {item.model}
-                        </p>
-                        <p className="text-xs text-muted-foreground">IMEI: {item.imei}</p>
-                        <p className="text-xs text-muted-foreground">
-                          Buy: {money(Number(item.purchasePrice))}
-                        </p>
-                        <Button
-                          type="button"
-                          size="sm"
-                          className="mt-3 rounded-2xl"
-                          onClick={() => addToCart(item)}
-                          disabled={!canManage}
-                        >
-                          <Plus className="mr-2 h-4 w-4" />
-                          {language === "uz" ? "Savatchaga qo'shish" : "Add to cart"}
-                        </Button>
+              <div className="space-y-2">
+                <Label>{language === "uz" ? "Mavjud telefonlar" : "Available phones"}</Label>
+                <Popover open={itemsOpen} onOpenChange={setItemsOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className="h-10 w-full justify-between rounded-2xl"
+                      disabled={!canManage}
+                    >
+                      {language === "uz"
+                        ? "Telefon qidiring va tanlang..."
+                        : "Search and select phone..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 opacity-60" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-2" align="start">
+                    <div className="space-y-2">
+                      <Input
+                        className="h-9 rounded-xl"
+                        placeholder={
+                          language === "uz"
+                            ? "IMEI / brand / model bo'yicha qidiring..."
+                            : "Search IMEI / brand / model..."
+                        }
+                        value={query}
+                        onChange={(event) => setQuery(event.target.value)}
+                      />
+                      <div
+                        className="h-[18rem] overflow-y-auto rounded-xl border overscroll-contain"
+                        onWheel={(event) => {
+                          const element = event.currentTarget;
+                          element.scrollTop += event.deltaY;
+                          event.preventDefault();
+                        }}
+                      >
+                        {inventoryLoading ? (
+                          <div className="p-3 text-sm text-muted-foreground">
+                            {language === "uz" ? "Inventar yuklanmoqda..." : "Loading inventory..."}
+                          </div>
+                        ) : null}
+                        {!inventoryLoading && availableRows.length === 0 ? (
+                          <div className="p-3 text-sm text-muted-foreground">
+                            {language === "uz" ? "Mavjud telefonlar topilmadi." : "No available phones found."}
+                          </div>
+                        ) : null}
+                        {!inventoryLoading
+                          ? availableRows.map((item) => (
+                              <button
+                                key={item.id}
+                                type="button"
+                                className="flex w-full items-start justify-between gap-2 border-b px-3 py-2 text-left last:border-b-0 hover:bg-muted/60"
+                                onClick={() => {
+                                  addToCart(item);
+                                  setItemsOpen(false);
+                                }}
+                              >
+                                <div className="min-w-0">
+                                  <div className="truncate text-sm font-medium">
+                                    {item.brand} {item.model}
+                                  </div>
+                                  <div className="truncate text-xs text-muted-foreground">
+                                    IMEI: {item.imei} • {language === "uz" ? "Narx" : "Price"}:{" "}
+                                    {money(Number(item.purchasePrice))}
+                                  </div>
+                                </div>
+                              </button>
+                            ))
+                          : null}
                       </div>
-                    ))
-                  : null}
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
 
@@ -381,11 +412,7 @@ export function EditSaleModal({
                 </div>
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-3">
-                <div className="space-y-1">
-                  <Label>Total</Label>
-                  <Input className="h-10 rounded-2xl" value={money(total)} readOnly />
-                </div>
+              {paymentType === "PAY_LATER" ? (
                 <div className="space-y-1">
                   <Label>Paid now</Label>
                   <Input
@@ -395,9 +422,16 @@ export function EditSaleModal({
                     onChange={(event) => setPaidNow(Number(event.target.value || 0))}
                   />
                 </div>
-                <div className="space-y-1">
-                  <Label>Remaining</Label>
-                  <Input className="h-10 rounded-2xl" value={money(Math.max(0, remaining))} readOnly />
+              ) : null}
+
+              <div className="rounded-2xl border bg-muted/10 p-4 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Total</span>
+                  <span className="font-semibold">{money(total)}</span>
+                </div>
+                <div className="mt-2 flex justify-between">
+                  <span className="text-muted-foreground">Remaining</span>
+                  <span className="font-semibold">{money(Math.max(0, remaining))}</span>
                 </div>
               </div>
 

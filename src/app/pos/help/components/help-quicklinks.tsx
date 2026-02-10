@@ -32,7 +32,7 @@ export function HelpQuickLinks({ guides }: HelpQuickLinksProps) {
   const { language } = useI18n();
   if (guides.length === 0) {
     return (
-      <Card className="rounded-3xl">
+      <Card className="rounded-3xl border-muted/40 bg-muted/30">
         <CardContent className="p-4 text-sm text-muted-foreground">
           {language === "uz"
             ? "Qidiruv va rol bo'yicha yordam bo'limlari topilmadi."
@@ -48,7 +48,7 @@ export function HelpQuickLinks({ guides }: HelpQuickLinksProps) {
         const Icon = ICON_BY_GUIDE_ID[guide.id as keyof typeof ICON_BY_GUIDE_ID] ?? Users;
         return (
         <a key={guide.id} href={`#guide-${guide.id}`} className="group">
-          <Card className="rounded-3xl transition hover:bg-muted/10">
+          <Card className="rounded-3xl border-muted/40 bg-muted/30 transition hover:bg-muted/40">
             <CardContent className="p-4">
               <div className="flex items-start gap-3">
                 <div className="rounded-2xl border bg-muted/10 p-2">

@@ -13,7 +13,7 @@ export function TopDebtCustomersCard({
 }) {
   const { language } = useI18n();
   return (
-    <Card className="rounded-3xl">
+    <Card className="rounded-3xl border-muted/40 bg-muted/30">
       <CardHeader>
         <CardTitle className="text-base">
           {language === "uz" ? "Top 5 qarzdor mijozlar" : "Top 5 debt customers"}

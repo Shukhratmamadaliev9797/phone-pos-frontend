@@ -1,83 +1,97 @@
-import { clearAuth, updateTokens } from '@/store/slices/auth.slice'
+import { clearAuth, updateTokens } from "@/store/slices/auth.slice";
 import type {
   BaseQueryFn,
   FetchArgs,
   FetchBaseQueryError,
-} from '@reduxjs/toolkit/query'
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
-import type { RootState } from '@/store'
-import { AUTH } from './path'
+} from "@reduxjs/toolkit/query";
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import type { RootState } from "@/store";
+import { AUTH } from "./path";
 
-const url = import.meta.env.VITE_BASE_URL
+const url = import.meta.env.VITE_BASE_URL;
 
+// Oddiy baseQuery: har bir requestga token bo‘lsa Authorization header qo‘shish
 const baseQuery = fetchBaseQuery({
   baseUrl: `${url}`,
   prepareHeaders: (headers, { getState }) => {
-    const state = getState() as RootState
-    const token = state.auth.accessToken
-    if (token) headers.set('Authorization', `Bearer ${token}`)
-    return headers
-  },
-})
+    const state = getState() as RootState;
+    const token = state.auth.accessToken;
 
+    if (token) headers.set("Authorization", `Bearer ${token}`);
+
+    return headers;
+  },
+});
+
+// Agar request 401 qaytarsa, refresh token orqali tokenni yangilab qayta urunadi
 const baseQueryWithReauth: BaseQueryFn<
   string | FetchArgs,
   unknown,
   FetchBaseQueryError
 > = async (args, api, extraOptions) => {
-  let result = await baseQuery(args, api, extraOptions)
+  // 1) Avval original requestni yuboradi
+  let result = await baseQuery(args, api, extraOptions);
 
-  // If we get 401 and it's not the refresh endpoint itself
+  // 2) Agar 401 bo‘lsa — access token eskirgan bo‘lishi mumkin
   if (result.error?.status === 401) {
-    const state = api.getState() as RootState
-    const refreshToken = state.auth.refreshToken
+    const state = api.getState() as RootState;
+    const refreshToken = state.auth.refreshToken;
 
     if (refreshToken) {
-      // Try to refresh the token
       const refreshResult = await baseQuery(
         {
           url: AUTH.REFRESH,
-          method: 'POST',
+          method: "POST",
           body: {
             refresh_token: refreshToken,
           },
         },
         api,
-        extraOptions
-      )
+        extraOptions,
+      );
 
-      const refreshData = refreshResult?.data as AuthResponse | undefined
+      const refreshData = refreshResult?.data as AuthResponse | undefined;
 
+      // 3) Agar yangi tokenlar kelsa — store'ni yangilaymiz
       if (refreshData?.auth?.access_token && refreshData?.auth?.refresh_token) {
-        // Update tokens in store
         api.dispatch(
           updateTokens({
             accessToken: refreshData.auth.access_token,
             refreshToken: refreshData.auth.refresh_token,
-          })
-        )
+          }),
+        );
 
-        // Retry the original request with new token
-        result = await baseQuery(args, api, extraOptions)
+        // 4) Keyin original requestni yana bir marta qayta yuboramiz
+        result = await baseQuery(args, api, extraOptions);
       } else {
-        // Refresh failed, logout user
-        api.dispatch(clearAuth())
+        // Refresh ham ishlamasa — userni logout qilamiz
+        api.dispatch(clearAuth());
       }
     } else {
-      // No refresh token, logout user
-      api.dispatch(clearAuth())
+      // Refresh token bo‘lmasa — userni logout qilamiz
+      api.dispatch(clearAuth());
     }
   }
 
-  return result
-}
+  return result;
+};
 
+// RTK Query asosiy API instance
 export const baseApi = createApi({
-  reducerPath: 'api',
+  reducerPath: "api",
+
   baseQuery: baseQueryWithReauth,
-  tagTypes: ['AUTH', 'USERS'],
+
+  tagTypes: ["AUTH", "USERS"],
+
   keepUnusedDataFor: 30,
+
+  //Tabga qaytganimizda avtomatik refetch qiladi
   refetchOnFocus: true,
+
+  // 🌐 Internet uzilib qaytsa refetch qiladi
   refetchOnReconnect: true,
+
+  // 📌 Bu yerda endpoint yo‘q, keyin injectEndpoints orqali qo‘shiladi
   endpoints: () => ({}),
-})
+});

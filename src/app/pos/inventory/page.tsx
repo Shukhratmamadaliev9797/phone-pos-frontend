@@ -30,7 +30,7 @@ import { canManageSales } from "@/lib/auth/permissions";
 import { useAppSelector } from "@/store/hooks";
 import { useI18n } from "@/lib/i18n/provider";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 
 const INITIAL_FILTERS: InventoryFiltersValue = {
   q: "",
@@ -77,6 +77,7 @@ export default function InventoryPage() {
         itemName: item.itemName,
         brand: item.brand,
         model: item.model,
+        storage: item.storage ?? null,
         imei: item.imei,
         serialNumber: item.serialNumber ?? null,
         purchaseId: item.purchaseId ?? null,
@@ -191,6 +192,13 @@ export default function InventoryPage() {
     await loadRows();
   }
 
+  async function handleMarkDone(item: InventoryRow): Promise<void> {
+    if (!canManage) throw new Error(language === "uz" ? "Ruxsat yo'q" : "Not allowed");
+    if (item.status !== "IN_REPAIR") return;
+    await updateInventoryItem(Number(item.id), { status: "READY_FOR_SALE" });
+    await loadRows();
+  }
+
   async function handlePurchaseUpdate(
     purchaseId: number,
     payload: UpdatePurchasePayload,
@@ -246,6 +254,7 @@ export default function InventoryPage() {
           setSaleOpen(true);
         }}
         onMarkInRepair={handleMoveToRepair}
+        onMarkDone={handleMarkDone}
         onDeleteItem={handleDeleteItem}
       />
       <InventoryPagination

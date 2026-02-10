@@ -22,7 +22,7 @@ export function RepairsReportPanel({ data }: { data: ReportsOverview }) {
 
   return (
     <div className="space-y-4">
-      <Card className="rounded-3xl">
+      <Card className="rounded-3xl border-muted/40 bg-muted/30">
         <CardContent className="p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
@@ -69,7 +69,7 @@ export function RepairsReportPanel({ data }: { data: ReportsOverview }) {
 
 function MiniCard({ label, value }: { label: string; value: string }) {
   return (
-    <Card className="rounded-3xl">
+    <Card className="rounded-3xl border-muted/40 bg-muted/30">
       <CardContent className="pr-1">
         <div className="text-xs text-muted-foreground">{label}</div>
         <div className="mt-2 text-lg font-semibold">{value}</div>

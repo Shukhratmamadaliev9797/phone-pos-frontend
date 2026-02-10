@@ -22,6 +22,7 @@ export type InventoryListItem = {
   itemName: string
   brand: string
   model: string
+  storage?: string | null
   imei: string
   serialNumber?: string | null
   purchaseId?: number | null
@@ -33,6 +34,39 @@ export type InventoryListItem = {
   repairCost: number
   expectedSalePrice?: number | null
   knownIssues?: string | null
+}
+
+export type InventoryActivityType =
+  | 'CREATED'
+  | 'PURCHASED'
+  | 'SOLD'
+  | 'STATUS_CHANGED'
+  | 'MOVED_TO_REPAIR'
+  | 'MARKED_DONE'
+
+export type InventoryActivity = {
+  id: number
+  type: InventoryActivityType
+  fromStatus?: InventoryStatus | null
+  toStatus: InventoryStatus
+  notes?: string | null
+  happenedAt: string
+}
+
+export type InventoryDetailItem = {
+  id: number
+  imei: string
+  brand: string
+  model: string
+  storage?: string | null
+  color?: string | null
+  condition: InventoryCondition
+  knownIssues?: string | null
+  expectedSalePrice?: string | null
+  status: InventoryStatus
+  purchaseId?: number | null
+  saleId?: number | null
+  activities: InventoryActivity[]
 }
 
 export type InventoryListResponse = {
@@ -122,4 +156,8 @@ export async function createInventoryItem(
 
 export async function deleteInventoryItem(id: number): Promise<void> {
   await request(() => api.delete(`/api/inventory-items/${id}`))
+}
+
+export async function getInventoryItem(id: number): Promise<InventoryDetailItem> {
+  return request(() => api.get(`/api/inventory-items/${id}`))
 }

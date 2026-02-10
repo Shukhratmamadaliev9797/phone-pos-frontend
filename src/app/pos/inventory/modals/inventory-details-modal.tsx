@@ -1,3 +1,4 @@
+import * as React from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,6 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Copy, Pencil, ShoppingCart } from "lucide-react";
 import type { InventoryRow } from "../components/inventory-table";
 import { useI18n } from "@/lib/i18n/provider";
+import {
+  getInventoryItem,
+  type InventoryActivity,
+  type InventoryDetailItem,
+} from "@/lib/api/inventory";
 
 function money(n: number) {
   return `${Math.max(0, Math.round(n)).toLocaleString("en-US")} so'm`;
@@ -30,6 +36,82 @@ export function InventoryDetailsModal({
   onCreateSale: (item: InventoryRow) => void;
 }) {
   const { language } = useI18n();
+  const [activities, setActivities] = React.useState<InventoryActivity[]>([]);
+  const [activitiesLoading, setActivitiesLoading] = React.useState(false);
+  const [activitiesError, setActivitiesError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (!open || !item?.id) return;
+
+    let active = true;
+    const loadDetail = async () => {
+      try {
+        setActivitiesLoading(true);
+        setActivitiesError(null);
+        const detail: InventoryDetailItem = await getInventoryItem(Number(item.id));
+        if (!active) return;
+        setActivities(detail.activities ?? []);
+      } catch (error) {
+        if (!active) return;
+        setActivities([]);
+        setActivitiesError(
+          error instanceof Error
+            ? error.message
+            : language === "uz"
+              ? "Aktivliklarni yuklab bo'lmadi."
+              : "Failed to load activities.",
+        );
+      } finally {
+        if (active) {
+          setActivitiesLoading(false);
+        }
+      }
+    };
+
+    void loadDetail();
+    return () => {
+      active = false;
+    };
+  }, [open, item?.id, language]);
+
+  const statusToLabel = (status?: string | null) => {
+    if (!status) return "—";
+    if (status === "IN_STOCK") return language === "uz" ? "Omborda" : "In Stock";
+    if (status === "IN_REPAIR") return language === "uz" ? "Ta'mirda" : "In Repair";
+    if (status === "READY_FOR_SALE")
+      return language === "uz" ? "Sotuvga tayyor" : "Ready for Sale";
+    if (status === "SOLD") return language === "uz" ? "Sotilgan" : "Sold";
+    if (status === "RETURNED") return language === "uz" ? "Qaytarilgan" : "Returned";
+    return status;
+  };
+
+  const activityTypeLabel = (type: string) => {
+    if (type === "CREATED") {
+      return language === "uz" ? "Inventoryga qo'shildi" : "Added to inventory";
+    }
+    if (type === "PURCHASED") {
+      return language === "uz" ? "Telefon sotib olindi" : "Phone purchased";
+    }
+    if (type === "SOLD") {
+      return language === "uz" ? "Telefon sotildi" : "Phone sold";
+    }
+    if (type === "MOVED_TO_REPAIR") {
+      return language === "uz" ? "Ta'mirga o'tkazildi" : "Moved to repair";
+    }
+    if (type === "MARKED_DONE") {
+      return language === "uz" ? "Bajarildi deb belgilandi" : "Marked done";
+    }
+    return language === "uz" ? "Holat o'zgardi" : "Status changed";
+  };
+
+  const formatWhen = (value: string) => {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    })}`;
+  };
   const copyIMEI = async () => {
     if (!item?.imei) return;
     try {
@@ -211,6 +293,61 @@ export function InventoryDetailsModal({
                   {language === "uz" ? "Sotuv yaratish" : "Create sale"}
                 </Button>
               </div>
+            </div>
+
+            <Separator />
+
+            <div className="space-y-3">
+              <div className="text-sm font-semibold">
+                {language === "uz" ? "Aktivliklar" : "Activities"}
+              </div>
+
+              {activitiesLoading ? (
+                <div className="rounded-2xl border bg-muted/10 p-4 text-sm text-muted-foreground">
+                  {language === "uz" ? "Aktivliklar yuklanmoqda..." : "Loading activities..."}
+                </div>
+              ) : null}
+
+              {!activitiesLoading && activitiesError ? (
+                <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+                  {activitiesError}
+                </div>
+              ) : null}
+
+              {!activitiesLoading && !activitiesError && activities.length === 0 ? (
+                <div className="rounded-2xl border bg-muted/10 p-4 text-sm text-muted-foreground">
+                  {language === "uz" ? "Aktivliklar hali yo'q." : "No activities yet."}
+                </div>
+              ) : null}
+
+              {!activitiesLoading && !activitiesError && activities.length > 0 ? (
+                <div className="space-y-2">
+                  {activities.map((activity) => (
+                    <div
+                      key={activity.id}
+                      className="rounded-2xl border bg-muted/10 p-3 text-sm"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="font-medium">{activityTypeLabel(activity.type)}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {formatWhen(activity.happenedAt)}
+                        </div>
+                      </div>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        {statusToLabel(activity.fromStatus)} {" -> "}{" "}
+                        <span className="font-medium text-foreground">
+                          {statusToLabel(activity.toStatus)}
+                        </span>
+                      </div>
+                      {activity.notes ? (
+                        <div className="mt-1 break-words text-xs text-muted-foreground">
+                          {activity.notes}
+                        </div>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              ) : null}
             </div>
           </div>
         )}

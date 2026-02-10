@@ -111,7 +111,7 @@ export default function MessagesPage() {
         </p>
       </div>
 
-      <Card className="rounded-3xl">
+      <Card className="rounded-3xl border-muted/40 bg-muted/30">
         <CardContent className="space-y-4 p-4 sm:p-6">
           <div className="max-w-md">
             <Input
@@ -142,7 +142,7 @@ export default function MessagesPage() {
             </Button>
           </div>
 
-          <div className="overflow-x-auto rounded-2xl border">
+          <div className="overflow-x-auto rounded-2xl border border-muted/40 bg-muted/30">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -249,27 +249,27 @@ export default function MessagesPage() {
           ) : (
             <div className="space-y-4">
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-2xl border p-3">
+                <div className="rounded-2xl border border-muted/40 bg-muted/30 p-3">
                   <div className="text-xs text-muted-foreground">Full name</div>
                   <div className="text-sm font-medium">{selected.senderFullName}</div>
                 </div>
-                <div className="rounded-2xl border p-3">
+                <div className="rounded-2xl border border-muted/40 bg-muted/30 p-3">
                   <div className="text-xs text-muted-foreground">Role</div>
                   <div className="text-sm font-medium">{selected.senderRole}</div>
                 </div>
-                <div className="rounded-2xl border p-3">
+                <div className="rounded-2xl border border-muted/40 bg-muted/30 p-3">
                   <div className="text-xs text-muted-foreground">Status</div>
                   <div className="text-sm font-medium">
                     {selected.isRead ? "Read" : "Unread"}
                   </div>
                 </div>
-                <div className="rounded-2xl border p-3">
+                <div className="rounded-2xl border border-muted/40 bg-muted/30 p-3">
                   <div className="text-xs text-muted-foreground">Created at</div>
                   <div className="text-sm font-medium">{formatDate(selected.createdAt)}</div>
                 </div>
               </div>
 
-              <div className="rounded-2xl border p-3">
+              <div className="rounded-2xl border border-muted/40 bg-muted/30 p-3">
                 <div className="text-xs text-muted-foreground">Message</div>
                 <div className="mt-1 whitespace-pre-wrap break-words text-sm">
                   {selected.message}

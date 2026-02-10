@@ -19,7 +19,7 @@ export function HelpRoleTable({ guides }: HelpRoleTableProps) {
   const { language } = useI18n();
   if (guides.length === 0) {
     return (
-      <Card className="rounded-3xl">
+      <Card className="rounded-3xl border-muted/40 bg-muted/30">
         <CardContent className="p-4 text-sm text-muted-foreground">
           {language === "uz"
             ? "Joriy qidiruv uchun mos amallar topilmadi."
@@ -30,7 +30,7 @@ export function HelpRoleTable({ guides }: HelpRoleTableProps) {
   }
 
   return (
-    <Card className="rounded-3xl">
+    <Card className="rounded-3xl border-muted/40 bg-muted/30">
       <CardContent className="p-4 sm:p-6">
         <div>
           <div className="text-sm font-semibold">

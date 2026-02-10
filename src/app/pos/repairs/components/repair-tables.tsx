@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -76,7 +77,7 @@ export function RepairsTable({
   };
 
   return (
-    <div className="rounded-3xl border overflow-hidden">
+    <Card className="rounded-3xl overflow-hidden border-muted/40 bg-muted/30">
       <div className="border-b p-4">
         <div className="text-sm font-semibold">{language === "uz" ? "Ta'mir tarixi" : "Repairs history"}</div>
         <div className="text-sm text-muted-foreground">
@@ -86,6 +87,7 @@ export function RepairsTable({
         </div>
       </div>
 
+      <CardContent className="p-0">
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
@@ -247,6 +249,7 @@ export function RepairsTable({
           </TableBody>
         </Table>
       </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

@@ -1,7 +1,7 @@
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Search, RotateCcw } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -32,8 +32,10 @@ export function WorkersFilters({
 }) {
   const { language } = useI18n();
   const tr = {
+    search: language === "uz" ? "Qidirish" : "Search",
     searchPlaceholder:
       language === "uz" ? "Qidirish: xodim ismi yoki roli..." : "Search: worker name or role...",
+    month: language === "uz" ? "Oy (YYYY-MM)" : "Month (YYYY-MM)",
     role: language === "uz" ? "Rol" : "Role",
     status: language === "uz" ? "Holat" : "Status",
     allRoles: language === "uz" ? "Barcha rollar" : "All roles",
@@ -46,35 +48,44 @@ export function WorkersFilters({
     paid: language === "uz" ? "To'langan" : "Paid",
     partial: language === "uz" ? "Qisman" : "Partial",
     unpaid: language === "uz" ? "To'lanmagan" : "Unpaid",
-    reset: language === "uz" ? "Tiklash" : "Reset",
+    reset: language === "uz" ? "Filtrlarni tiklash" : "Reset filters",
   };
 
   return (
-    <Card className="rounded-3xl">
-      <CardContent>
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-          <div className="flex-1">
+    <div className="rounded-2xl border border-muted/40 bg-muted/30 p-4">
+      <div className="flex flex-wrap items-end gap-4">
+        <div className="flex min-w-[240px] flex-1 flex-col gap-1">
+          <Label htmlFor="workersSearch">{tr.search}</Label>
+          <div className="relative">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
+              id="workersSearch"
               placeholder={tr.searchPlaceholder}
               value={value.q}
               onChange={(e) => onChange({ ...value, q: e.target.value })}
-              className="h-10 rounded-2xl"
+              className="pl-9"
             />
           </div>
+        </div>
 
-          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+        <div className="flex flex-wrap items-end gap-2">
+          <div className="flex min-w-[140px] flex-col gap-1">
+            <Label>{tr.month}</Label>
             <Input
               value={value.month}
               onChange={(e) => onChange({ ...value, month: e.target.value })}
-              className="h-10 w-[140px] rounded-2xl"
+              className="h-10 w-[140px]"
               placeholder="YYYY-MM"
             />
+          </div>
 
+          <div className="flex min-w-[160px] flex-col gap-1">
+            <Label>{tr.role}</Label>
             <Select
               value={value.role}
               onValueChange={(v) => onChange({ ...value, role: v as WorkerRoleFilter })}
             >
-              <SelectTrigger className="h-10 w-[160px] rounded-2xl">
+              <SelectTrigger className="h-10 w-auto min-w-[160px]">
                 <SelectValue placeholder={tr.role} />
               </SelectTrigger>
               <SelectContent>
@@ -86,12 +97,15 @@ export function WorkersFilters({
                 <SelectItem value="ACCOUNTANT">{tr.accountant}</SelectItem>
               </SelectContent>
             </Select>
+          </div>
 
+          <div className="flex min-w-[150px] flex-col gap-1">
+            <Label>{tr.status}</Label>
             <Select
               value={value.status}
               onValueChange={(v) => onChange({ ...value, status: v as WorkerPayStatusFilter })}
             >
-              <SelectTrigger className="h-10 w-[150px] rounded-2xl">
+              <SelectTrigger className="h-10 w-auto min-w-[150px]">
                 <SelectValue placeholder={tr.status} />
               </SelectTrigger>
               <SelectContent>
@@ -101,10 +115,12 @@ export function WorkersFilters({
                 <SelectItem value="UNPAID">{tr.unpaid}</SelectItem>
               </SelectContent>
             </Select>
+          </div>
 
-            <Button
-              variant="outline"
-              className="h-10 rounded-2xl"
+          <Button
+            variant="outline"
+            className="h-10 px-3"
+            title={tr.reset}
               onClick={() =>
                 onChange({
                   q: "",
@@ -114,12 +130,10 @@ export function WorkersFilters({
                 })
               }
             >
-              <X className="mr-2 h-4 w-4" />
-              {tr.reset}
+            <RotateCcw className="h-4 w-4" />
             </Button>
           </div>
         </div>
-      </CardContent>
-    </Card>
+    </div>
   );
 }

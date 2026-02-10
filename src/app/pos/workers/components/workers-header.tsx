@@ -1,6 +1,6 @@
-import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Plus } from 'lucide-react'
+import { Separator } from '@/components/ui/separator'
+import { Briefcase, Plus } from 'lucide-react'
 import { useI18n } from '@/lib/i18n/provider'
 
 export function WorkersPageHeader({
@@ -13,30 +13,32 @@ export function WorkersPageHeader({
   const { language } = useI18n()
 
   return (
-    <Card className="rounded-3xl">
-      <CardContent>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <div className="text-xl font-semibold">
+    <div className="space-y-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <Briefcase className="h-5 w-5 text-muted-foreground" />
+            <h1 className="text-2xl font-semibold tracking-tight">
               {language === 'uz' ? 'Xodimlar' : 'Workers'}
-            </div>
-            <div className="mt-1 text-sm text-muted-foreground">
-              {language === 'uz'
-                ? "Oylik ish haqi va to'lov tarixi"
-                : 'Monthly salaries and payment history'}
-            </div>
+            </h1>
           </div>
-
-          {canManage ? (
-            <div className="flex flex-wrap gap-2">
-              <Button variant="outline" className="rounded-2xl" onClick={onNewWorker}>
-                <Plus className="mr-2 h-4 w-4" />
-                {language === 'uz' ? 'Yangi xodim' : 'New Worker'}
-              </Button>
-            </div>
-          ) : null}
+          <p className="text-sm text-muted-foreground">
+            {language === 'uz'
+              ? "Oylik ish haqi va to'lov tarixi"
+              : 'Monthly salaries and payment history'}
+          </p>
         </div>
-      </CardContent>
-    </Card>
+
+        {canManage ? (
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" className="rounded-2xl" onClick={onNewWorker}>
+              <Plus className="mr-2 h-4 w-4" />
+              {language === 'uz' ? 'Yangi xodim' : 'New Worker'}
+            </Button>
+          </div>
+        ) : null}
+      </div>
+      <Separator />
+    </div>
   )
 }

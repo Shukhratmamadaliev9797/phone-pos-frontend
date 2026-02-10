@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Check, ChevronsUpDown, X } from "lucide-react";
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { CreateRepairCasePayload, RepairInventoryItem } from "@/lib/api/repairs";
 import { useI18n } from "@/lib/i18n/provider";
@@ -227,44 +227,53 @@ export function NewRepairModal({
                       value={search}
                       onValueChange={(value) => setSearch(value)}
                     />
-                    <CommandEmpty>
-                      {inventoryLoading
-                        ? language === "uz"
-                          ? "Inventar yuklanmoqda..."
-                          : "Loading inventory..."
-                        : inventoryError ||
-                          (language === "uz" ? "Telefon topilmadi." : "No phone found.")}
-                    </CommandEmpty>
-
-                    <CommandGroup
-                      heading={
-                        language === "uz"
-                          ? "Mavjudlar (Omborda / Tayyor)"
-                          : "Available (In stock / Ready)"
-                      }
+                    <CommandList
+                      className="h-[18rem] max-h-[18rem] overflow-y-auto overscroll-contain"
+                      onWheel={(event) => {
+                        const element = event.currentTarget;
+                        element.scrollTop += event.deltaY;
+                        event.preventDefault();
+                      }}
                     >
-                      {availableItems.map((p) => (
-                        <CommandItem
-                          key={p.id}
-                          value={`${p.brand} ${p.model} ${p.imei ?? ""}`}
-                          onSelect={() => {
-                            setPhoneId(p.id);
-                            setPhoneOpen(false);
-                          }}
-                          className="flex items-center justify-between"
-                        >
-                          <div className="min-w-0">
-                            <div className="truncate text-sm">{p.brand} {p.model}</div>
-                            <div className="truncate text-xs text-muted-foreground">
-                              {p.imei ? `IMEI: ${p.imei}` : "IMEI: —"} •{" "}
-                              {language === "uz" ? statusText(p.status).uz : statusText(p.status).en}
-                            </div>
-                          </div>
+                      <CommandEmpty>
+                        {inventoryLoading
+                          ? language === "uz"
+                            ? "Inventar yuklanmoqda..."
+                            : "Loading inventory..."
+                          : inventoryError ||
+                            (language === "uz" ? "Telefon topilmadi." : "No phone found.")}
+                      </CommandEmpty>
 
-                          <Check className={cn("h-4 w-4", phoneId === p.id ? "opacity-100" : "opacity-0")} />
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
+                      <CommandGroup
+                        heading={
+                          language === "uz"
+                            ? "Mavjudlar (Omborda / Tayyor)"
+                            : "Available (In stock / Ready)"
+                        }
+                      >
+                        {availableItems.map((p) => (
+                          <CommandItem
+                            key={p.id}
+                            value={`${p.brand} ${p.model} ${p.imei ?? ""}`}
+                            onSelect={() => {
+                              setPhoneId(p.id);
+                              setPhoneOpen(false);
+                            }}
+                            className="flex items-center justify-between"
+                          >
+                            <div className="min-w-0">
+                              <div className="truncate text-sm">{p.brand} {p.model}</div>
+                              <div className="truncate text-xs text-muted-foreground">
+                                {p.imei ? `IMEI: ${p.imei}` : "IMEI: —"} •{" "}
+                                {language === "uz" ? statusText(p.status).uz : statusText(p.status).en}
+                              </div>
+                            </div>
+
+                            <Check className={cn("h-4 w-4", phoneId === p.id ? "opacity-100" : "opacity-0")} />
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
                   </Command>
                 </PopoverContent>
               </Popover>

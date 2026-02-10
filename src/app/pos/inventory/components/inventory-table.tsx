@@ -16,7 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Copy } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { InventoryDetailsModal } from "../modals/inventory-details-modal";
 import { useI18n } from "@/lib/i18n/provider";
@@ -41,6 +41,7 @@ export type InventoryRow = {
   itemName: string; // iPhone 12 128GB
   brand?: string;
   model?: string;
+  storage?: string | null;
   imei?: string;
   condition: InventoryCondition;
   status: InventoryStatus;
@@ -128,6 +129,7 @@ export function InventoryTable({
   onEditItem,
   onCreateSale,
   onMarkInRepair,
+  onMarkDone,
   onDeleteItem,
 }: {
   rows: InventoryRow[];
@@ -137,6 +139,7 @@ export function InventoryTable({
   onEditItem: (item: InventoryRow) => void;
   onCreateSale: (item: InventoryRow) => void;
   onMarkInRepair: (item: InventoryRow) => Promise<void>;
+  onMarkDone: (item: InventoryRow) => Promise<void>;
   onDeleteItem: (item: InventoryRow) => Promise<void>;
 }) {
   const { language } = useI18n();
@@ -150,15 +153,6 @@ export function InventoryTable({
   const openDetails = (row: InventoryRow) => {
     setSelected(row);
     setOpen(true);
-  };
-
-  const copyIMEI = async (imei?: string) => {
-    if (!imei) return;
-    try {
-      await navigator.clipboard.writeText(imei);
-    } catch {
-      // ignore
-    }
   };
 
   const onAction = (action: string, row: InventoryRow) => {
@@ -176,6 +170,22 @@ export function InventoryTable({
               : language === "uz"
                 ? "Telefonni ta'mirga o'tkazib bo'lmadi."
                 : "Failed to move phone to repair.",
+          );
+        }
+      })();
+    }
+    if (action === "done") {
+      void (async () => {
+        try {
+          setActionError(null);
+          await onMarkDone(row);
+        } catch (requestError) {
+          setActionError(
+            requestError instanceof Error
+              ? requestError.message
+              : language === "uz"
+                ? "Holatni yangilab bo'lmadi."
+                : "Failed to update status.",
           );
         }
       })();
@@ -209,13 +219,13 @@ export function InventoryTable({
 
   return (
     <>
-      <div className="rounded-3xl border bg-card">
+      <div className="rounded-3xl border border-muted/40 bg-muted/30 p-3">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="min-w-[220px]">{language === "uz" ? "Nomi" : "Item"}</TableHead>
-                <TableHead className="min-w-[200px]">IMEI / Serial</TableHead>
+                <TableHead className="min-w-[160px]">{language === "uz" ? "Xotira" : "Storage"}</TableHead>
                 <TableHead>{language === "uz" ? "Holati" : "Condition"}</TableHead>
                 <TableHead>{language === "uz" ? "Holat" : "Status"}</TableHead>
                 <TableHead className="text-right">{language === "uz" ? "Tannarx" : "Cost"}</TableHead>
@@ -252,25 +262,10 @@ export function InventoryTable({
                 >
                   <TableCell className="font-medium">{row.itemName}</TableCell>
 
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    {row.imei ? (
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs text-muted-foreground">
-                          {row.imei}
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 rounded-xl"
-                          onClick={() => copyIMEI(row.imei)}
-                          title={language === "uz" ? "IMEI nusxalash" : "Copy IMEI"}
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <span className="text-sm text-muted-foreground">—</span>
-                    )}
+                  <TableCell>
+                    <span className="text-sm text-muted-foreground">
+                      {row.storage?.trim() || "—"}
+                    </span>
                   </TableCell>
 
                   <TableCell>
@@ -310,8 +305,18 @@ export function InventoryTable({
                         </DropdownMenuItem>
                         {canManage ? (
                           <>
-                            <DropdownMenuItem onClick={() => onAction("repair", row)}>
-                              {language === "uz" ? "Ta'mirga o'tkazish" : "In repair"}
+                            <DropdownMenuItem
+                              onClick={() =>
+                                onAction(row.status === "IN_REPAIR" ? "done" : "repair", row)
+                              }
+                            >
+                              {row.status === "IN_REPAIR"
+                                ? language === "uz"
+                                  ? "Bajarildi deb belgilash"
+                                  : "Mark done"
+                                : language === "uz"
+                                  ? "Ta'mirga o'tkazish"
+                                  : "In repair"}
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => onAction("sale", row)}>
                               {language === "uz" ? "Sotuv yaratish" : "Create sale"}

@@ -15,7 +15,7 @@ export function PaidVsUnpaidCard({
 }) {
   const { language } = useI18n();
   return (
-    <Card className="rounded-3xl">
+    <Card className="rounded-3xl border-muted/40 bg-muted/30">
       <CardHeader>
         <CardTitle className="text-base">
           {language === "uz" ? "To'langan va To'lanmagan" : "Paid vs Unpaid"}

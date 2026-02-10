@@ -72,7 +72,7 @@ export function HelpTroubleshooting() {
       : items;
 
   return (
-    <Card className="rounded-3xl">
+    <Card className="rounded-3xl border-muted/40 bg-muted/30">
       <CardContent className="p-4 sm:p-6">
         <div>
           <div className="text-sm font-semibold">Troubleshooting</div>

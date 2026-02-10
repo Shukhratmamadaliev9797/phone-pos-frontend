@@ -197,7 +197,7 @@ export default function Reports() {
         </div>
       ) : null}
       {loading ? (
-        <div className="rounded-2xl border bg-card px-4 py-3 text-sm text-muted-foreground">
+        <div className="rounded-2xl border border-muted/40 bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
           {language === "uz" ? "Hisobotlar yuklanmoqda..." : "Loading reports..."}
         </div>
       ) : null}
@@ -205,7 +205,7 @@ export default function Reports() {
       <ReportsKpiRow data={data} />
 
       <Tabs defaultValue="sales" className="space-y-4">
-        <TabsList className="rounded-2xl">
+        <TabsList className="rounded-2xl border border-muted/40 bg-muted/30">
           <TabsTrigger value="sales">{language === "uz" ? "Sotuvlar" : "Sales"}</TabsTrigger>
           <TabsTrigger value="purchases">{language === "uz" ? "Xaridlar" : "Purchases"}</TabsTrigger>
           <TabsTrigger value="repairs">{language === "uz" ? "Ta'mirlar" : "Repairs"}</TabsTrigger>

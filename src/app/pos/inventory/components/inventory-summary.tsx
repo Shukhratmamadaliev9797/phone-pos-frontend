@@ -60,7 +60,7 @@ export function InventorySummary({ rows }: { rows: InventoryRow[] }) {
       {items.map((item) => {
         const Icon = item.icon;
         return (
-          <Card key={item.label} className="rounded-3xl">
+          <Card key={item.label} className="rounded-3xl border-muted/40 bg-muted/30">
             <CardContent className="p-5">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">

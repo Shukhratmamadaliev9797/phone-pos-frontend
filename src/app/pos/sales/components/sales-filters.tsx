@@ -1,7 +1,7 @@
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Search, RotateCcw } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -35,48 +35,62 @@ export function SalesFilters({
 }) {
   const { language } = useI18n();
   const tr = {
+    search: language === "uz" ? "Qidirish" : "Search",
     searchPlaceholder:
       language === "uz"
         ? "Qidirish: Sotuv ID, mijoz tel/ismi, IMEI, brend/model..."
         : "Search: Sale ID, customer phone/name, IMEI, brand/model...",
+    from: language === "uz" ? "Dan" : "From",
+    to: language === "uz" ? "Gacha" : "To",
     paymentType: language === "uz" ? "To'lov turi" : "Payment type",
     allTypes: language === "uz" ? "Barcha turlar" : "All types",
     paidNow: language === "uz" ? "Hozir to'langan" : "Paid now",
     payLater: language === "uz" ? "Keyin to'lash" : "Pay later",
-    reset: language === "uz" ? "Tiklash" : "Reset",
+    reset: language === "uz" ? "Filtrlarni tiklash" : "Reset filters",
   };
 
   return (
-    <Card className="rounded-3xl">
-      <CardContent >
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-          {/* Search takes remaining space */}
-          <div className="flex-1">
+    <div className="rounded-2xl border border-muted/40 bg-muted/30 p-4">
+      <div className="flex flex-wrap items-end gap-4">
+        <div className="flex min-w-[240px] flex-1 flex-col gap-1">
+          <Label htmlFor="salesSearch">{tr.search}</Label>
+          <div className="relative">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
+              id="salesSearch"
               placeholder={tr.searchPlaceholder}
-              className="h-10 rounded-2xl"
+              className="pl-9"
               value={search}
               onChange={(event) => onSearchChange(event.target.value)}
             />
           </div>
+        </div>
 
-          {/* Filters on the right; wrap under on smaller screens */}
-          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+        <div className="flex flex-wrap items-end gap-2">
+          <div className="flex min-w-[170px] flex-col gap-1">
+            <Label>{tr.from}</Label>
             <Input
               type="date"
-              className="h-10 w-[170px] rounded-2xl"
+              className="h-10 w-[170px]"
               value={dateFrom}
               onChange={(event) => onDateFromChange(event.target.value)}
             />
+          </div>
+
+          <div className="flex min-w-[170px] flex-col gap-1">
+            <Label>{tr.to}</Label>
             <Input
               type="date"
-              className="h-10 w-[170px] rounded-2xl"
+              className="h-10 w-[170px]"
               value={dateTo}
               onChange={(event) => onDateToChange(event.target.value)}
             />
+          </div>
 
+          <div className="flex min-w-[160px] flex-col gap-1">
+            <Label>{tr.paymentType}</Label>
             <Select value={paymentType} onValueChange={(value) => onPaymentTypeChange(value as "all" | SalePaymentType)}>
-              <SelectTrigger className="h-10 w-[160px] rounded-2xl">
+              <SelectTrigger className="h-10 w-auto min-w-[160px]">
                 <SelectValue placeholder={tr.paymentType} />
               </SelectTrigger>
               <SelectContent>
@@ -85,14 +99,13 @@ export function SalesFilters({
                 <SelectItem value="PAY_LATER">{tr.payLater}</SelectItem>
               </SelectContent>
             </Select>
-
-            <Button variant="outline" className="h-10 rounded-2xl" type="button" onClick={onReset}>
-              <X className="mr-2 h-4 w-4" />
-              {tr.reset}
-            </Button>
           </div>
+
+          <Button variant="outline" className="h-10 px-3" title={tr.reset} type="button" onClick={onReset}>
+            <RotateCcw className="h-4 w-4" />
+          </Button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

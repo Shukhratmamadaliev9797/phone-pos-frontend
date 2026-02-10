@@ -49,8 +49,7 @@ function KpiCard({ item }: { item: KPI }) {
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-2xl border p-4 shadow-sm",
-        "bg-white dark:bg-background",
+        "relative overflow-hidden rounded-3xl border border-muted/40 bg-muted/30 p-4 shadow-sm",
         isPrimary &&
           "border-transparent text-white bg-gradient-to-br from-indigo-600 to-violet-500"
       )}
