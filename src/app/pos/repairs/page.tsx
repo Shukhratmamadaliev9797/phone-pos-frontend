@@ -133,7 +133,7 @@ export default function RepairsPage() {
 
       const response = await listRepairs(params);
       const visibleRepairs = (response.data ?? []).filter(
-        (repair) => repair.item?.status !== "READY_FOR_SALE",
+        (repair) => repair.status !== "DONE",
       );
       setRows(visibleRepairs.map(toRepairRow));
       setTotal(visibleRepairs.length);
