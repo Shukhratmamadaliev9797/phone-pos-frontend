@@ -18,8 +18,7 @@ import {
 } from "recharts";
 import type { DashboardOverview } from "@/lib/api/dashboard";
 import { useI18n } from "@/lib/i18n/provider";
-
-type Range = "weekly" | "monthly" | "yearly";
+import type { Range } from "../types";
 
 function formatSum(val: number) {
   return `${val.toLocaleString("en-US")} so'm`;
@@ -68,7 +67,7 @@ export function SalesRevenueChart({
   // small helper: show total for selected range (UI nice)
   const total = React.useMemo(
     () => data.reduce((sum, p) => sum + p.revenue, 0),
-    [data]
+    [data],
   );
 
   return (
@@ -80,18 +79,28 @@ export function SalesRevenueChart({
           </CardTitle>
           <div className="text-xs text-muted-foreground">
             {language === "uz" ? "Jami" : "Total"}:{" "}
-            <span className="font-medium text-foreground">{formatSum(total)}</span>
+            <span className="font-medium text-foreground">
+              {formatSum(total)}
+            </span>
           </div>
         </div>
 
         <Select value={range} onValueChange={(v) => setRange(v as Range)}>
           <SelectTrigger className="h-9 w-[140px] rounded-2xl">
-            <SelectValue placeholder={language === "uz" ? "Oylik" : "Monthly"} />
+            <SelectValue
+              placeholder={language === "uz" ? "Oylik" : "Monthly"}
+            />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="weekly">{language === "uz" ? "Haftalik" : "Weekly"}</SelectItem>
-            <SelectItem value="monthly">{language === "uz" ? "Oylik" : "Monthly"}</SelectItem>
-            <SelectItem value="yearly">{language === "uz" ? "Yillik" : "Yearly"}</SelectItem>
+            <SelectItem value="weekly">
+              {language === "uz" ? "Haftalik" : "Weekly"}
+            </SelectItem>
+            <SelectItem value="monthly">
+              {language === "uz" ? "Oylik" : "Monthly"}
+            </SelectItem>
+            <SelectItem value="yearly">
+              {language === "uz" ? "Yillik" : "Yearly"}
+            </SelectItem>
           </SelectContent>
         </Select>
       </CardHeader>
@@ -99,7 +108,10 @@ export function SalesRevenueChart({
       <CardContent className="pt-2">
         <div className="h-[280px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data} margin={{ top: 10, right: 10, bottom: 0, left: 0 }}>
+            <LineChart
+              data={data}
+              margin={{ top: 10, right: 10, bottom: 0, left: 0 }}
+            >
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis
                 dataKey="name"

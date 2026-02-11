@@ -69,6 +69,7 @@ export function WorkersTable({
   onRowClick,
   onView,
   onPay,
+  onDelete,
 }: {
   rows: WorkerRow[];
   loading: boolean;
@@ -77,6 +78,7 @@ export function WorkersTable({
   onRowClick?: (row: WorkerRow) => void;
   onView?: (row: WorkerRow) => void;
   onPay?: (row: WorkerRow) => void;
+  onDelete?: (row: WorkerRow) => void;
 }) {
   const { language } = useI18n();
   return (
@@ -180,6 +182,14 @@ export function WorkersTable({
                             {language === "uz"
                               ? "Ish haqi to'lash"
                               : "Pay salary"}
+                          </DropdownMenuItem>
+                        ) : null}
+                        {canManage ? (
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => onDelete?.(row)}
+                          >
+                            {language === "uz" ? "O'chirish" : "Delete"}
                           </DropdownMenuItem>
                         ) : null}
                       </DropdownMenuContent>

@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Wrench, Wallet, Clock, Calculator, User } from "lucide-react";
+import { Wrench, Wallet, Clock, Calculator } from "lucide-react";
 import { useI18n } from "@/lib/i18n/provider";
 
 function Stat({
@@ -22,9 +22,7 @@ function Stat({
             <div className="text-xs text-muted-foreground">{label}</div>
             <div className="mt-1 text-xl font-semibold">{value}</div>
             {hint && (
-              <div className="mt-1 text-xs text-muted-foreground">
-                {hint}
-              </div>
+              <div className="mt-1 text-xs text-muted-foreground">{hint}</div>
             )}
           </div>
 
@@ -46,7 +44,6 @@ export function RepairsSummary({
   totalSpending,
   pendingCount,
   avgCost,
-  topTechnician,
 }: {
   totalRepairs: number;
   totalSpending: number;
@@ -57,18 +54,20 @@ export function RepairsSummary({
   const { language } = useI18n();
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
-      {/* Repairs count */}
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4">
+      {/* Repaired phones count */}
       <Stat
-        label={language === "uz" ? "Ta'mirlar (davr)" : "Repairs (period)"}
+        label={language === "uz" ? "Jami tayyor telefonlar" : "Total repaired phones"}
         value={String(totalRepairs)}
         icon={Wrench}
-        hint={language === "uz" ? "Joriy ro'yxat" : "Current list"}
+        hint={language === "uz" ? "DONE holatdagilar soni" : "Count of DONE status"}
       />
 
       {/* Total spending */}
       <Stat
-        label={language === "uz" ? "Jami ta'mir xarajati" : "Total repair spending"}
+        label={
+          language === "uz" ? "Jami ta'mir xarajati" : "Total repair spending"
+        }
         value={money(totalSpending)}
         icon={Wallet}
       />
@@ -85,14 +84,6 @@ export function RepairsSummary({
         label={language === "uz" ? "O'rtacha ta'mir narxi" : "Avg repair cost"}
         value={money(avgCost)}
         icon={Calculator}
-      />
-
-      {/* Top technician (optional) */}
-      <Stat
-        label={language === "uz" ? "Eng faol texnik" : "Top technician"}
-        value={topTechnician || "—"}
-        icon={User}
-        hint={topTechnician ? (language === "uz" ? "Eng ko'p biriktirilgan" : "Most assigned") : undefined}
       />
     </div>
   );

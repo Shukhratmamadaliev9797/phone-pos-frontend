@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import { Save } from 'lucide-react'
+import { AlertCircle, Save } from 'lucide-react'
 import type {
   PurchaseDetail,
   PurchasePaymentMethod,
@@ -22,6 +22,11 @@ import type {
 } from '@/lib/api/purchases'
 import type { PhoneCondition, PhoneStatus } from '../types'
 import { useI18n } from '@/lib/i18n/provider'
+import {
+  getPhoneModelsByBrand,
+  PHONE_BRAND_OPTIONS,
+  PHONE_STORAGE_OPTIONS,
+} from '@/lib/constants/phone-options'
 
 type EditPurchaseModalProps = {
   open: boolean
@@ -60,6 +65,11 @@ export function EditPurchaseModal({
   const [customerFullName, setCustomerFullName] = React.useState('')
   const [customerPhoneNumber, setCustomerPhoneNumber] = React.useState('')
   const [customerAddress, setCustomerAddress] = React.useState('')
+  const [customerFieldInvalid, setCustomerFieldInvalid] = React.useState({
+    fullName: false,
+    phoneNumber: false,
+    address: false,
+  })
   const [paymentMethod, setPaymentMethod] =
     React.useState<PurchasePaymentMethod>('CASH')
   const [paymentType, setPaymentType] =
@@ -67,7 +77,20 @@ export function EditPurchaseModal({
   const [paidNow, setPaidNow] = React.useState(0)
   const [notes, setNotes] = React.useState('')
   const [error, setError] = React.useState<string | null>(null)
-  const [phoneError, setPhoneError] = React.useState<string | null>(null)
+  const [invalidPriceIndices, setInvalidPriceIndices] = React.useState<number[]>([])
+  const [invalidItemFields, setInvalidItemFields] = React.useState<
+    Record<
+      number,
+      {
+        brand: boolean
+        model: boolean
+        storage: boolean
+        condition: boolean
+        imei: boolean
+        status: boolean
+      }
+    >
+  >({})
   const [loading, setLoading] = React.useState(false)
 
   React.useEffect(() => {
@@ -85,7 +108,7 @@ export function EditPurchaseModal({
         condition: entry.item.condition as PhoneCondition,
         knownIssues: entry.item.knownIssues ?? '',
         initialStatus:
-          entry.item.status === 'IN_REPAIR' ? 'IN_REPAIR' : 'IN_STOCK',
+          entry.item.status === 'IN_REPAIR' ? 'IN_REPAIR' : 'READY_FOR_SALE',
         purchasePrice: Number(entry.purchasePrice),
       })),
     )
@@ -97,7 +120,13 @@ export function EditPurchaseModal({
     setPaidNow(Number(purchase.paidNow))
     setNotes(purchase.notes ?? '')
     setError(null)
-    setPhoneError(null)
+    setCustomerFieldInvalid({
+      fullName: false,
+      phoneNumber: false,
+      address: false,
+    })
+    setInvalidPriceIndices([])
+    setInvalidItemFields({})
   }, [purchase, open])
 
   const total = React.useMemo(
@@ -112,6 +141,16 @@ export function EditPurchaseModal({
     updateFailed: language === 'uz' ? "Xaridni yangilab bo'lmadi" : 'Failed to update purchase',
   }
 
+  React.useEffect(() => {
+    if (!requiresCustomer) {
+      setCustomerFieldInvalid({
+        fullName: false,
+        phoneNumber: false,
+        address: false,
+      })
+    }
+  }, [requiresCustomer])
+
   const updateItem = <K extends keyof EditableItem>(
     index: number,
     key: K,
@@ -122,6 +161,27 @@ export function EditPurchaseModal({
       next[index] = { ...next[index], [key]: value }
       return next
     })
+    const keyToFlag: Record<string, 'brand' | 'model' | 'storage' | 'condition' | 'imei' | 'status'> = {
+      brand: 'brand',
+      model: 'model',
+      storage: 'storage',
+      condition: 'condition',
+      imei: 'imei',
+      initialStatus: 'status',
+    }
+    const flag = keyToFlag[String(key)]
+    if (flag) {
+      setInvalidItemFields((prev) => {
+        const row = prev[index]
+        if (!row) return prev
+        const next = { ...prev }
+        next[index] = { ...row, [flag]: false }
+        return next
+      })
+    }
+    if (key === 'purchasePrice') {
+      setInvalidPriceIndices((prev) => prev.filter((itemIndex) => itemIndex !== index))
+    }
   }
 
   async function handleSubmit() {
@@ -141,32 +201,56 @@ export function EditPurchaseModal({
       return
     }
 
-    for (const item of items) {
-      if (!item.imei.trim()) {
-        setError(
-          language === 'uz' ? 'Har bir item uchun IMEI majburiy' : 'IMEI is required for every item',
-        )
-        return
+    const priceErrorIndices: number[] = []
+    const itemFieldErrors: Record<
+      number,
+      {
+        brand: boolean
+        model: boolean
+        storage: boolean
+        condition: boolean
+        imei: boolean
+        status: boolean
       }
-      if (!item.brand.trim() || !item.model.trim()) {
-        setError(
-          language === 'uz'
-            ? 'Har bir item uchun brand va model majburiy'
-            : 'Brand and model are required for every item',
-        )
-        return
+    > = {}
+    for (const [index, item] of items.entries()) {
+      itemFieldErrors[index] = {
+        brand: !item.brand.trim(),
+        model: !item.model.trim(),
+        storage: !item.storage.trim(),
+        condition: !item.condition,
+        imei: !item.imei.trim(),
+        status: !item.initialStatus,
       }
       if ((Number(item.purchasePrice) || 0) <= 0) {
-        setError(
-          language === 'uz'
-            ? 'purchasePrice 0 dan katta bo‘lishi kerak'
-            : 'purchasePrice must be greater than 0',
-        )
-        return
+        priceErrorIndices.push(index)
       }
     }
+    const hasItemFieldError = Object.values(itemFieldErrors).some(
+      (row) =>
+        row.brand || row.model || row.storage || row.condition || row.imei || row.status,
+    )
+    if (hasItemFieldError) {
+      setInvalidItemFields(itemFieldErrors)
+      setError(
+        language === 'uz'
+          ? "Brand, model, storage, condition, IMEI va status majburiy."
+          : 'Brand, model, storage, condition, IMEI and status are required.',
+      )
+      return
+    }
+    setInvalidItemFields({})
+    if (priceErrorIndices.length > 0) {
+      setInvalidPriceIndices(priceErrorIndices)
+      setError(
+        language === 'uz'
+          ? "Phone price maydonini to'ldiring"
+          : 'Phone price is required',
+      )
+      return
+    }
+    setInvalidPriceIndices([])
 
-    setPhoneError(null)
     const paid = paymentType === 'PAID_NOW' ? total : Number(paidNow) || 0
 
     if (!Number.isFinite(paid) || paid < 0) {
@@ -187,23 +271,22 @@ export function EditPurchaseModal({
       return
     }
 
-    const hasCustomerName = customerFullName.trim().length > 0
-    const hasCustomerPhone = customerPhoneNumber.trim().length > 0
-
-    if (hasCustomerName && !hasCustomerPhone) {
-      setPhoneError(
-        language === 'uz'
-          ? "Mijoz ismi kiritilganda telefon raqami ham majburiy."
-          : 'Phone number is required when customer name is entered.',
-      )
-      return
+    const missingCustomerFields = {
+      fullName: requiresCustomer && !customerFullName.trim(),
+      phoneNumber: requiresCustomer && !customerPhoneNumber.trim(),
+      address: requiresCustomer && !customerAddress.trim(),
     }
+    setCustomerFieldInvalid(missingCustomerFields)
 
-    if (requiresCustomer && (!customerFullName.trim() || !customerPhoneNumber.trim())) {
+    if (
+      missingCustomerFields.fullName ||
+      missingCustomerFields.phoneNumber ||
+      missingCustomerFields.address
+    ) {
       setError(
         language === 'uz'
-          ? "Pay-later yoki remaining bor bo'lsa mijoz to'liq ismi va telefoni majburiy"
-          : 'Customer full name and phone number are required for pay-later or remaining balance',
+          ? "Qarz/kredit xarid uchun mijoz ma'lumotlarini to'liq kiriting"
+          : 'Please provide complete customer details for debt/credit purchase',
       )
       return
     }
@@ -285,67 +368,115 @@ export function EditPurchaseModal({
                     <div key={`${item.itemId ?? 'new'}-${index}`} className="space-y-4">
                       <div className="grid gap-4 sm:grid-cols-2">
                         <div className="space-y-1">
-                          <Label>Brand</Label>
-                          <Input
-                            value={item.brand}
-                            onChange={(event) => updateItem(index, 'brand', event.target.value)}
-                          />
+                          <Label>Brand *</Label>
+                          <Select
+                            value={item.brand || undefined}
+                            onValueChange={(value) => {
+                              updateItem(index, 'brand', value)
+                              updateItem(index, 'model', '')
+                            }}
+                          >
+                            <SelectTrigger
+                              className={`w-full ${
+                                invalidItemFields[index]?.brand
+                                  ? 'border-destructive focus-visible:ring-destructive/30'
+                                  : ''
+                              }`}
+                            >
+                              <SelectValue placeholder={language === 'uz' ? 'Brendni tanlang' : 'Select brand'} />
+                            </SelectTrigger>
+                            <SelectContent className="w-[--radix-select-trigger-width]">
+                              {PHONE_BRAND_OPTIONS.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
 
                         <div className="space-y-1">
-                          <Label>Model</Label>
-                          <Input
-                            value={item.model}
-                            onChange={(event) => updateItem(index, 'model', event.target.value)}
-                          />
+                          <Label>Model *</Label>
+                          <Select
+                            value={item.model || undefined}
+                            onValueChange={(value) => updateItem(index, 'model', value)}
+                            disabled={!item.brand}
+                          >
+                            <SelectTrigger
+                              className={`w-full ${
+                                invalidItemFields[index]?.model
+                                  ? 'border-destructive focus-visible:ring-destructive/30'
+                                  : ''
+                              }`}
+                            >
+                              <SelectValue
+                                placeholder={
+                                  !item.brand
+                                    ? language === 'uz'
+                                      ? 'Avval brendni tanlang'
+                                      : 'Select brand first'
+                                    : language === 'uz'
+                                      ? 'Modelni tanlang'
+                                      : 'Select model'
+                                }
+                              />
+                            </SelectTrigger>
+                            <SelectContent className="w-[--radix-select-trigger-width]">
+                              {getPhoneModelsByBrand(item.brand).map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
+                              {item.model && !getPhoneModelsByBrand(item.brand).includes(item.model) ? (
+                                <SelectItem value={item.model}>{item.model}</SelectItem>
+                              ) : null}
+                            </SelectContent>
+                          </Select>
                         </div>
 
                         <div className="space-y-1">
-                          <Label>Storage</Label>
-                          <Input
-                            value={item.storage}
-                            onChange={(event) => updateItem(index, 'storage', event.target.value)}
-                          />
+                          <Label>Storage *</Label>
+                          <Select
+                            value={item.storage || undefined}
+                            onValueChange={(value) => updateItem(index, 'storage', value)}
+                          >
+                            <SelectTrigger
+                              className={`w-full ${
+                                invalidItemFields[index]?.storage
+                                  ? 'border-destructive focus-visible:ring-destructive/30'
+                                  : ''
+                              }`}
+                            >
+                              <SelectValue placeholder={language === 'uz' ? 'Xotirani tanlang' : 'Select storage'} />
+                            </SelectTrigger>
+                            <SelectContent className="w-[--radix-select-trigger-width]">
+                              {PHONE_STORAGE_OPTIONS.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
 
                         <div className="space-y-1">
-                          <Label>Color</Label>
-                          <Input
-                            value={item.color}
-                            onChange={(event) => updateItem(index, 'color', event.target.value)}
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <Label>Serial number</Label>
-                          <Input
-                            value={item.serialNumber}
-                            onChange={(event) =>
-                              updateItem(index, 'serialNumber', event.target.value)
-                            }
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <Label>IMEI</Label>
-                          <Input
-                            value={item.imei}
-                            onChange={(event) => updateItem(index, 'imei', event.target.value)}
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <Label>Condition</Label>
+                          <Label>Condition *</Label>
                           <Select
                             value={item.condition}
                             onValueChange={(value) =>
                               updateItem(index, 'condition', value as PhoneCondition)
                             }
                           >
-                            <SelectTrigger>
+                            <SelectTrigger
+                              className={`w-full ${
+                                invalidItemFields[index]?.condition
+                                  ? 'border-destructive focus-visible:ring-destructive/30'
+                                  : ''
+                              }`}
+                            >
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="w-[--radix-select-trigger-width]">
                               <SelectItem value="GOOD">Good</SelectItem>
                               <SelectItem value="USED">Used</SelectItem>
                               <SelectItem value="BROKEN">Broken</SelectItem>
@@ -354,29 +485,54 @@ export function EditPurchaseModal({
                         </div>
 
                         <div className="space-y-1">
-                          <Label>Initial status</Label>
+                          <Label>IMEI *</Label>
+                          <Input
+                            className={`w-full ${
+                              invalidItemFields[index]?.imei
+                                ? 'border-destructive focus-visible:ring-destructive/30'
+                                : ''
+                            }`}
+                            value={item.imei}
+                            onChange={(event) => updateItem(index, 'imei', event.target.value)}
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <Label>Status *</Label>
                           <Select
                             value={item.initialStatus}
                             onValueChange={(value) =>
                               updateItem(index, 'initialStatus', value as PhoneStatus)
                             }
                           >
-                            <SelectTrigger>
+                            <SelectTrigger
+                              className={`w-full ${
+                                invalidItemFields[index]?.status
+                                  ? 'border-destructive focus-visible:ring-destructive/30'
+                                  : ''
+                              }`}
+                            >
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="IN_STOCK">In Stock</SelectItem>
+                            <SelectContent className="w-[--radix-select-trigger-width]">
+                              <SelectItem value="READY_FOR_SALE">Ready for sale</SelectItem>
                               <SelectItem value="IN_REPAIR">In Repair</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
 
                         <div className="space-y-1 sm:col-span-2">
-                          <Label>Purchase price</Label>
+                          <Label>Phone price *</Label>
                           <Input
+                            className={`w-full ${
+                              invalidPriceIndices.includes(index)
+                                ? 'border-destructive focus-visible:ring-destructive/30'
+                                : ''
+                            }`}
                             type="number"
                             inputMode="decimal"
-                            value={String(item.purchasePrice ?? 0)}
+                            placeholder={language === 'uz' ? "masalan: 1 200 000 so'm" : "e.g. 1,200,000 so'm"}
+                            value={item.purchasePrice ? String(item.purchasePrice) : ''}
                             onChange={(event) =>
                               updateItem(
                                 index,
@@ -427,10 +583,10 @@ export function EditPurchaseModal({
                           setPaymentMethod(value as PurchasePaymentMethod)
                         }
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="w-full">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="w-[--radix-select-trigger-width]">
                           <SelectItem value="CASH">Cash</SelectItem>
                           <SelectItem value="CARD">Card</SelectItem>
                           <SelectItem value="OTHER">Other</SelectItem>
@@ -446,11 +602,11 @@ export function EditPurchaseModal({
                           setPaymentType(value as PurchasePaymentType)
                         }
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="w-full">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="PAID_NOW">Paid now</SelectItem>
+                        <SelectContent className="w-[--radix-select-trigger-width]">
+                          <SelectItem value="PAID_NOW">Full payment</SelectItem>
                           <SelectItem value="PAY_LATER">Pay later</SelectItem>
                         </SelectContent>
                       </Select>
@@ -458,7 +614,7 @@ export function EditPurchaseModal({
 
                     {paymentType === 'PAY_LATER' ? (
                       <div className="space-y-1">
-                        <Label>Paid now</Label>
+                        <Label>Initial pay</Label>
                         <Input
                           type="number"
                           inputMode="decimal"
@@ -471,15 +627,17 @@ export function EditPurchaseModal({
                     ) : null}
                   </div>
 
-                  <div className="rounded-2xl border bg-muted/10 p-4 text-sm">
+                  <div className="rounded-md border bg-muted/10 p-4 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Total</span>
                       <span className="font-semibold">{money(total)}</span>
                     </div>
-                    <div className="mt-2 flex justify-between">
-                      <span className="text-muted-foreground">Remaining</span>
-                      <span className="font-semibold">{money(Math.max(0, remaining))}</span>
-                    </div>
+                    {paymentType === 'PAY_LATER' ? (
+                      <div className="mt-2 flex justify-between">
+                        <span className="text-muted-foreground">Remaining</span>
+                        <span className="font-semibold">{money(Math.max(0, remaining))}</span>
+                      </div>
+                    ) : null}
                   </div>
 
                   <div className="space-y-1">
@@ -498,35 +656,67 @@ export function EditPurchaseModal({
                 <CardContent>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-1">
-                      <Label>
-                        Full name {requiresCustomer ? '(required)' : '(optional)'}
-                      </Label>
+                      <Label>Full name {requiresCustomer ? '*' : ''}</Label>
                       <Input
+                        className={
+                          customerFieldInvalid.fullName
+                            ? 'border-destructive focus-visible:ring-destructive/30'
+                            : ''
+                        }
                         value={customerFullName}
-                        onChange={(event) => setCustomerFullName(event.target.value)}
+                        onChange={(event) => {
+                          setCustomerFullName(event.target.value)
+                          if (customerFieldInvalid.fullName) {
+                            setCustomerFieldInvalid((prev) => ({
+                              ...prev,
+                              fullName: false,
+                            }))
+                          }
+                        }}
                         placeholder="Customer full name"
                       />
                     </div>
 
                     <div className="space-y-1">
-                      <Label>
-                        Phone number {requiresCustomer ? '(required)' : '(optional)'}
-                      </Label>
-                      {phoneError ? (
-                        <p className="text-xs text-destructive">{phoneError}</p>
-                      ) : null}
+                      <Label>Phone number {requiresCustomer ? '*' : ''}</Label>
                       <Input
+                        className={
+                          customerFieldInvalid.phoneNumber
+                            ? 'border-destructive focus-visible:ring-destructive/30'
+                            : ''
+                        }
                         value={customerPhoneNumber}
-                        onChange={(event) => setCustomerPhoneNumber(event.target.value)}
+                        onChange={(event) => {
+                          setCustomerPhoneNumber(event.target.value)
+                          if (customerFieldInvalid.phoneNumber) {
+                            setCustomerFieldInvalid((prev) => ({
+                              ...prev,
+                              phoneNumber: false,
+                            }))
+                          }
+                        }}
                         placeholder="+998901234567"
                       />
                     </div>
 
                     <div className="space-y-1 sm:col-span-2">
-                      <Label>Address (optional)</Label>
+                      <Label>Address {requiresCustomer ? '*' : ''}</Label>
                       <Input
+                        className={
+                          customerFieldInvalid.address
+                            ? 'border-destructive focus-visible:ring-destructive/30'
+                            : ''
+                        }
                         value={customerAddress}
-                        onChange={(event) => setCustomerAddress(event.target.value)}
+                        onChange={(event) => {
+                          setCustomerAddress(event.target.value)
+                          if (customerFieldInvalid.address) {
+                            setCustomerFieldInvalid((prev) => ({
+                              ...prev,
+                              address: false,
+                            }))
+                          }
+                        }}
                         placeholder="Customer address"
                       />
                     </div>
@@ -534,7 +724,22 @@ export function EditPurchaseModal({
                 </CardContent>
               </Card>
 
-              {error ? <p className="text-sm text-destructive">{error}</p> : null}
+              {error ? (
+                <div
+                  role="alert"
+                  className="animate-in fade-in slide-in-from-top-2 duration-300 rounded-xl border border-rose-300/60 bg-rose-500/10 p-3 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/15 dark:text-rose-200"
+                >
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                    <div className="space-y-0.5">
+                      <p className="text-sm font-semibold">
+                        {language === 'uz' ? "Saqlashda xato" : 'Save failed'}
+                      </p>
+                      <p className="text-sm leading-5">{error}</p>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
             </div>
           )}
 

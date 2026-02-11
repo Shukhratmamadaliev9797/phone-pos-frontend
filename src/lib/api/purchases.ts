@@ -4,7 +4,7 @@ import api from '@/lib/api'
 export type PurchasePaymentMethod = 'CASH' | 'CARD' | 'OTHER'
 export type PurchasePaymentType = 'PAID_NOW' | 'PAY_LATER'
 export type InventoryCondition = 'GOOD' | 'USED' | 'BROKEN'
-export type InventoryStatus = 'IN_STOCK' | 'IN_REPAIR'
+export type InventoryStatus = 'READY_FOR_SALE' | 'IN_REPAIR' | 'IN_STOCK'
 
 export type PurchaseListParams = {
   page?: number
@@ -67,7 +67,7 @@ export type UpdatePurchasePayload = {
     color?: string
     condition: InventoryCondition
     knownIssues?: string
-    initialStatus?: 'IN_STOCK' | 'IN_REPAIR'
+    initialStatus?: 'READY_FOR_SALE' | 'IN_REPAIR' | 'IN_STOCK'
     purchasePrice: number
   }>
 }

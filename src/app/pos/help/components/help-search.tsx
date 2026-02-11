@@ -11,19 +11,6 @@ type HelpSearchProps = {
 
 export function HelpSearch({ value, onChange }: HelpSearchProps) {
   const { language } = useI18n();
-  const hints =
-    language === "uz"
-      ? ["xarid", "sotuv", "qarz", "kredit", "ta'mir", "to'lov", "inventar", "hisobot"]
-      : [
-          "purchase",
-          "sale",
-          "debt",
-          "credit",
-          "repair",
-          "payment",
-          "inventory",
-          "reports",
-        ];
 
   return (
     <Card className="rounded-3xl border-muted/40 bg-muted/30">
@@ -42,23 +29,16 @@ export function HelpSearch({ value, onChange }: HelpSearchProps) {
               onChange={(event) => onChange(event.target.value)}
             />
           </div>
-
-          <div className="flex flex-wrap gap-2 lg:justify-end">
-            {hints.map((h) => (
-              <span
-                key={h}
-                className="rounded-full border bg-muted/10 px-3 py-1 text-xs text-muted-foreground"
-              >
-                {h}
-              </span>
-            ))}
-          </div>
         </div>
 
         <div className="mt-3 text-xs text-muted-foreground">
-          {language === "uz" ? "Maslahat: kalit so'zlar bilan qidiring, masalan " : "Tip: You can search by keywords like "}
-          <span className="font-medium">“pay later”</span>, <span className="font-medium">“IMEI”</span>,{" "}
-          {language === "uz" ? "yoki" : "or"} <span className="font-medium">“void”</span>.
+          {language === "uz"
+            ? "Maslahat: kalit so'zlar bilan qidiring, masalan "
+            : "Tip: You can search by keywords like "}
+          <span className="font-medium">“pay later”</span>,{" "}
+          <span className="font-medium">“IMEI”</span>,{" "}
+          {language === "uz" ? "yoki" : "or"}{" "}
+          <span className="font-medium">“void”</span>.
         </div>
       </CardContent>
     </Card>

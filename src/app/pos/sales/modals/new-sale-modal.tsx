@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Save, Trash2, ChevronsUpDown } from "lucide-react";
+import { Save, Trash2, ChevronsUpDown, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
@@ -59,11 +60,17 @@ export function NewSaleModal({
 
   const [paymentMethod, setPaymentMethod] = React.useState<SalePaymentMethod>("CASH");
   const [paymentType, setPaymentType] = React.useState<SalePaymentType>("PAID_NOW");
-  const [paidNow, setPaidNow] = React.useState(0);
+  const [initialPayInput, setInitialPayInput] = React.useState("");
+  const [initialPayError, setInitialPayError] = React.useState<string | null>(null);
   const [notes, setNotes] = React.useState("");
   const [customerFullName, setCustomerFullName] = React.useState("");
   const [customerPhoneNumber, setCustomerPhoneNumber] = React.useState("");
   const [customerAddress, setCustomerAddress] = React.useState("");
+  const [customerFieldInvalid, setCustomerFieldInvalid] = React.useState({
+    fullName: false,
+    phoneNumber: false,
+    address: false,
+  });
   const [saving, setSaving] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
   const [cart, setCart] = React.useState<CartItem[]>([]);
@@ -121,11 +128,17 @@ export function NewSaleModal({
       setItemsOpen(false);
       setPaymentMethod("CASH");
       setPaymentType("PAID_NOW");
-      setPaidNow(0);
+      setInitialPayInput("");
+      setInitialPayError(null);
       setNotes("");
       setCustomerFullName("");
       setCustomerPhoneNumber("");
       setCustomerAddress("");
+      setCustomerFieldInvalid({
+        fullName: false,
+        phoneNumber: false,
+        address: false,
+      });
       setSaving(false);
       setErrorMessage(null);
       setCart([]);
@@ -133,33 +146,18 @@ export function NewSaleModal({
   }, [open]);
 
   const total = cart.reduce((sum, item) => sum + (Number(item.salePrice) || 0), 0);
-  const effectivePaidNow =
-    paymentType === "PAID_NOW" ? total : Number(paidNow) || 0;
+  const effectivePaidNow = paymentType === "PAID_NOW" ? total : Number(initialPayInput || 0);
   const remaining = total - effectivePaidNow;
-
-  React.useEffect(() => {
-    if (paymentType === "PAID_NOW") {
-      setPaidNow(total);
-    } else {
-      setPaidNow((prev) => Math.min(prev, total));
-    }
-  }, [paymentType, total]);
 
   const noItems = cart.length === 0;
   const hasInvalidPrice = cart.some((item) => !Number.isFinite(item.salePrice) || item.salePrice <= 0);
-  const paidInvalid = paymentType === "PAY_LATER" && remaining < 0;
-  const customerRequired = paymentType === "PAY_LATER" || remaining > 0;
-  const customerInvalid =
-    customerRequired &&
-    (!customerFullName.trim() || !customerPhoneNumber.trim());
+  const requiresCustomer = paymentType === "PAY_LATER" || remaining > 0;
 
   const saveDisabled =
     !canManage ||
     saving ||
     noItems ||
-    hasInvalidPrice ||
-    paidInvalid ||
-    customerInvalid;
+    hasInvalidPrice;
 
   const addToCart = (item: AvailableSaleItem) => {
     if (cart.some((cartItem) => cartItem.itemId === item.id)) {
@@ -211,7 +209,28 @@ export function NewSaleModal({
       );
       return;
     }
-    if (paidInvalid) {
+    if (paymentType === "PAY_LATER" && !initialPayInput.trim()) {
+      const msg =
+        language === "uz"
+          ? "Initial pay maydonini to'ldiring."
+          : "Please fill the Initial pay field.";
+      setInitialPayError(msg);
+      setErrorMessage(msg);
+      return;
+    }
+
+    if (effectivePaidNow > total) {
+      const msg =
+        language === "uz"
+          ? "Initial pay phone price'dan katta bo'lishi mumkin emas."
+          : "Initial pay cannot be greater than total price.";
+      setInitialPayError(msg);
+      setErrorMessage(msg);
+      return;
+    }
+    setInitialPayError(null);
+
+    if (paymentType === "PAY_LATER" && remaining < 0) {
       setErrorMessage(
         language === "uz"
           ? "To'langan summa jamidan katta bo'lmasligi kerak."
@@ -219,18 +238,26 @@ export function NewSaleModal({
       );
       return;
     }
-    if (customerInvalid) {
+
+    const missingCustomerFields = {
+      fullName: requiresCustomer && !customerFullName.trim(),
+      phoneNumber: requiresCustomer && !customerPhoneNumber.trim(),
+      address: requiresCustomer && !customerAddress.trim(),
+    };
+    setCustomerFieldInvalid(missingCustomerFields);
+
+    if (missingCustomerFields.fullName || missingCustomerFields.phoneNumber || missingCustomerFields.address) {
       setErrorMessage(
         language === "uz"
-          ? "Pay later yoki remaining bor bo'lsa mijoz to'liq ismi va telefoni majburiy."
-          : "Customer full name and phone number are required for pay later or remaining balance.",
+          ? "Qarzli sotuv uchun mijoz ma'lumotlarini to'liq kiriting."
+          : "Please provide complete customer details for pay-later sale.",
       );
       return;
     }
 
     const payload: CreateSalePayload = {
       customer:
-        customerRequired || customerFullName.trim() || customerPhoneNumber.trim()
+        requiresCustomer || customerFullName.trim() || customerPhoneNumber.trim()
           ? {
               fullName: customerFullName.trim(),
               phoneNumber: customerPhoneNumber.trim(),
@@ -407,7 +434,7 @@ export function NewSaleModal({
                         )}
                         type="number"
                         placeholder={language === "uz" ? "Sotuv narxi" : "Sale price"}
-                        value={String(item.salePrice)}
+                        value={item.salePrice > 0 ? String(item.salePrice) : ""}
                         onChange={(event) => updatePrice(item.itemId, event.target.value)}
                       />
                       <Button
@@ -433,113 +460,201 @@ export function NewSaleModal({
               </div>
             </div>
 
-            <div className="rounded-3xl border p-4 space-y-4">
-              <div className="text-sm font-semibold">
-                {language === "uz" ? "To'lov tafsilotlari" : "Payment details"}
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-1">
-                  <Label>Payment method</Label>
-                  <Select
-                    value={paymentMethod}
-                    onValueChange={(value) => setPaymentMethod(value as SalePaymentMethod)}
-                  >
-                    <SelectTrigger className="h-10 rounded-2xl">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="CASH">Cash</SelectItem>
-                      <SelectItem value="CARD">Card</SelectItem>
-                      <SelectItem value="OTHER">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label>Payment type</Label>
-                  <Select
-                    value={paymentType}
-                    onValueChange={(value) => setPaymentType(value as SalePaymentType)}
-                  >
-                    <SelectTrigger className="h-10 rounded-2xl">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="PAID_NOW">Paid now</SelectItem>
-                      <SelectItem value="PAY_LATER">Pay later</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+            <Card className="rounded-3xl">
+              <CardHeader>
+                <CardTitle className="text-base">{language === "uz" ? "To'lov" : "Payment"}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <Label>Payment method</Label>
+                    <Select
+                      value={paymentMethod}
+                      onValueChange={(value) => setPaymentMethod(value as SalePaymentMethod)}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="w-[--radix-select-trigger-width]">
+                        <SelectItem value="CASH">Cash</SelectItem>
+                        <SelectItem value="CARD">Card</SelectItem>
+                        <SelectItem value="OTHER">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              <div className="grid gap-4 sm:grid-cols-3">
-                <div className="space-y-1">
-                  <Label>Total</Label>
-                  <Input className="h-10 rounded-2xl" value={money(total)} readOnly />
+                  <div className="space-y-1">
+                    <Label>Payment type</Label>
+                    <Select
+                      value={paymentType}
+                      onValueChange={(value) => setPaymentType(value as SalePaymentType)}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="w-[--radix-select-trigger-width]">
+                        <SelectItem value="PAID_NOW">Full payment</SelectItem>
+                        <SelectItem value="PAY_LATER">Pay later</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
+
                 {paymentType === "PAY_LATER" ? (
                   <div className="space-y-1">
-                    <Label>Paid now</Label>
+                    <Label>Initial pay</Label>
                     <Input
-                      className={cn("h-10 rounded-2xl", paidInvalid ? "border-rose-400" : "")}
+                      className={cn(
+                        "w-full",
+                        initialPayError ? "border-destructive focus-visible:ring-destructive/30" : "",
+                      )}
                       type="number"
-                      value={String(paidNow)}
-                      onChange={(event) => setPaidNow(Number(event.target.value || 0))}
+                      inputMode="decimal"
+                      placeholder={language === "uz" ? "masalan: 300 000 so'm" : "e.g. 300,000 so'm"}
+                      value={initialPayInput}
+                      onChange={(event) => {
+                        setInitialPayInput(event.target.value.replace(/[^\d.]/g, ""));
+                        if (initialPayError) {
+                          setInitialPayError(null);
+                        }
+                      }}
+                    />
+                    {initialPayError ? (
+                      <div
+                        role="alert"
+                        className="animate-in fade-in slide-in-from-top-2 duration-300 rounded-xl border border-rose-300/60 bg-rose-500/10 p-3 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/15 dark:text-rose-200"
+                      >
+                        <div className="flex items-start gap-2">
+                          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                          <div className="space-y-0.5">
+                            <p className="text-sm font-semibold">
+                              {language === "uz" ? "Xato" : "Validation error"}
+                            </p>
+                            <p className="text-sm leading-5">{initialPayError}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                <div className="rounded-md border bg-muted/10 p-4 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Total</span>
+                    <span className="font-semibold">{money(total)}</span>
+                  </div>
+                  {paymentType === "PAY_LATER" ? (
+                    <div className="mt-2 flex justify-between">
+                      <span className="text-muted-foreground">Remaining</span>
+                      <span className="font-semibold">{money(Math.max(0, remaining))}</span>
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="space-y-1">
+                  <Label>Notes</Label>
+                  <Textarea value={notes} onChange={(event) => setNotes(event.target.value)} />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-3xl">
+              <CardHeader>
+                <CardTitle className="text-base">{language === "uz" ? "Mijoz" : "Customer"}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <Label>
+                      Full name {requiresCustomer ? "*" : ""}
+                    </Label>
+                    <Input
+                      className={cn(
+                        "w-full",
+                        customerFieldInvalid.fullName ? "border-destructive focus-visible:ring-destructive/30" : "",
+                      )}
+                      value={customerFullName}
+                      onChange={(event) => {
+                        setCustomerFullName(event.target.value);
+                        if (customerFieldInvalid.fullName) {
+                          setCustomerFieldInvalid((prev) => ({ ...prev, fullName: false }));
+                        }
+                      }}
+                      placeholder="Customer full name"
                     />
                   </div>
-                ) : null}
-                {paymentType === "PAY_LATER" ? (
+
                   <div className="space-y-1">
-                    <Label>Remaining</Label>
-                    <Input className="h-10 rounded-2xl" value={money(Math.max(0, remaining))} readOnly />
+                    <Label>
+                      Phone number {requiresCustomer ? "*" : ""}
+                    </Label>
+                    <Input
+                      className={cn(
+                        "w-full",
+                        customerFieldInvalid.phoneNumber ? "border-destructive focus-visible:ring-destructive/30" : "",
+                      )}
+                      value={customerPhoneNumber}
+                      onChange={(event) => {
+                        setCustomerPhoneNumber(event.target.value);
+                        if (customerFieldInvalid.phoneNumber) {
+                          setCustomerFieldInvalid((prev) => ({ ...prev, phoneNumber: false }));
+                        }
+                      }}
+                      placeholder="+998901234567"
+                    />
                   </div>
-                ) : null}
-              </div>
+                </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1">
-                  <Label>Customer full name {customerRequired ? "(required)" : "(optional)"}</Label>
+                  <Label>
+                    Address {requiresCustomer ? "*" : ""}
+                  </Label>
                   <Input
                     className={cn(
-                      "h-10 rounded-2xl",
-                      customerInvalid ? "border-amber-400" : "",
+                      "w-full",
+                      customerFieldInvalid.address ? "border-destructive focus-visible:ring-destructive/30" : "",
                     )}
-                    value={customerFullName}
-                    onChange={(event) => setCustomerFullName(event.target.value)}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label>Customer phone number {customerRequired ? "(required)" : "(optional)"}</Label>
-                  <Input
-                    className={cn(
-                      "h-10 rounded-2xl",
-                      customerInvalid ? "border-amber-400" : "",
-                    )}
-                    value={customerPhoneNumber}
-                    onChange={(event) => setCustomerPhoneNumber(event.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-1">
-                <div className="space-y-1">
-                  <Label>Customer address (optional)</Label>
-                  <Input
-                    className="h-10 rounded-2xl"
                     value={customerAddress}
-                    onChange={(event) => setCustomerAddress(event.target.value)}
+                    onChange={(event) => {
+                      setCustomerAddress(event.target.value);
+                      if (customerFieldInvalid.address) {
+                        setCustomerFieldInvalid((prev) => ({ ...prev, address: false }));
+                      }
+                    }}
+                    placeholder="Customer address"
                   />
                 </div>
-              </div>
 
-              <div className="space-y-1">
-                <Label>Notes</Label>
-                <Textarea value={notes} onChange={(event) => setNotes(event.target.value)} />
-              </div>
-            </div>
+                {requiresCustomer ? (
+                  <p className="text-xs text-muted-foreground">
+                    {language === "uz"
+                      ? "Pay later yoki qoldiq bo'lsa, mijoz ma'lumotlari saqlanadi va sotuvga biriktiriladi."
+                      : "For pay-later sales, customer details are required and linked to the sale."}
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    {language === "uz"
+                      ? "To'liq to'langan sale uchun customer ma'lumotlari ixtiyoriy."
+                      : "Customer details are optional for fully paid sale."}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
 
             {errorMessage ? (
-              <div className="rounded-2xl border border-amber-300 bg-amber-500/10 p-3 text-sm text-amber-800">
-                {errorMessage}
+              <div
+                role="alert"
+                className="animate-in fade-in slide-in-from-top-2 duration-300 rounded-xl border border-rose-300/60 bg-rose-500/10 p-3 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/15 dark:text-rose-200"
+              >
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <div className="space-y-0.5">
+                    <p className="text-sm font-semibold">
+                      {language === "uz" ? "Saqlashda xato" : "Save failed"}
+                    </p>
+                    <p className="text-sm leading-5">{errorMessage}</p>
+                  </div>
+                </div>
               </div>
             ) : null}
           </div>

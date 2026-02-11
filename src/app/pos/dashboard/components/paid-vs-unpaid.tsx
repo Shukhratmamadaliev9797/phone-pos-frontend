@@ -10,8 +10,12 @@ function money(value: number) {
 
 export function PaidVsUnpaidCard({
   paidVsUnpaid,
+  onViewDebts,
+  onViewCredits,
 }: {
   paidVsUnpaid: DashboardOverview["paidVsUnpaid"];
+  onViewDebts?: () => void;
+  onViewCredits?: () => void;
 }) {
   const { language } = useI18n();
   return (
@@ -55,10 +59,20 @@ export function PaidVsUnpaidCard({
         <Separator />
 
         <div className="grid gap-2 sm:grid-cols-2">
-          <Button className="rounded-2xl" variant="outline" type="button">
+          <Button
+            className="rounded-2xl"
+            variant="outline"
+            type="button"
+            onClick={onViewDebts}
+          >
             {language === "uz" ? "Qarzlar" : "View Debts"}
           </Button>
-          <Button className="rounded-2xl" variant="outline" type="button">
+          <Button
+            className="rounded-2xl"
+            variant="outline"
+            type="button"
+            onClick={onViewCredits}
+          >
             {language === "uz" ? "Kreditlar" : "View Credits"}
           </Button>
         </div>

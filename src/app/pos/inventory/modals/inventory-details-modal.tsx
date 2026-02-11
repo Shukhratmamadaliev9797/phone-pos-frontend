@@ -39,6 +39,7 @@ export function InventoryDetailsModal({
   const [activities, setActivities] = React.useState<InventoryActivity[]>([]);
   const [activitiesLoading, setActivitiesLoading] = React.useState(false);
   const [activitiesError, setActivitiesError] = React.useState<string | null>(null);
+  const [copied, setCopied] = React.useState(false);
 
   React.useEffect(() => {
     if (!open || !item?.id) return;
@@ -116,15 +117,14 @@ export function InventoryDetailsModal({
     if (!item?.imei) return;
     try {
       await navigator.clipboard.writeText(item.imei);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1400);
     } catch {}
   };
 
   const purchasePrice = Number(item?.purchaseCost ?? 0);
   const repairPrice = Number(item?.repairCost ?? 0);
   const totalCost = Number(item?.cost ?? 0);
-  const expectedPrice = Number(item?.expectedPrice ?? 0);
-  const profitEst =
-    item?.expectedPrice !== undefined ? expectedPrice - totalCost : undefined;
   const conditionLabel =
     item?.condition === "GOOD"
       ? language === "uz"
@@ -179,7 +179,7 @@ export function InventoryDetailsModal({
               <div className="text-lg font-semibold">{item.itemName}</div>
 
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-2xl border bg-muted/10 p-4">
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className="text-xs text-muted-foreground">IMEI / Serial</div>
                   <div className="mt-1 font-mono text-xs text-muted-foreground break-all">
                     {item.imei ?? "—"}
@@ -194,11 +194,25 @@ export function InventoryDetailsModal({
                   disabled={!item.imei}
                 >
                   <Copy className="mr-2 h-4 w-4" />
-                  {language === "uz" ? "Nusxalash" : "Copy"}
+                  {copied
+                    ? language === "uz"
+                      ? "Nusxalandi"
+                      : "Copied"
+                    : language === "uz"
+                      ? "Nusxalash"
+                      : "Copy"}
                 </Button>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl border bg-muted/10 p-4">
+                  <div className="text-xs text-muted-foreground">
+                    {language === "uz" ? "Xotira" : "Storage"}
+                  </div>
+                  <div className="mt-1 text-sm font-medium">
+                    {item.storage?.trim() || "—"}
+                  </div>
+                </div>
                 <div className="rounded-2xl border bg-muted/10 p-4">
                   <div className="text-xs text-muted-foreground">
                     {language === "uz" ? "Holati" : "Condition"}
@@ -240,22 +254,6 @@ export function InventoryDetailsModal({
                     {language === "uz" ? "Umumiy tannarx" : "Total cost"}
                   </span>
                   <span className="font-semibold">{money(totalCost)}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">
-                    {language === "uz" ? "Kutilgan sotuv narxi" : "Expected sale price"}
-                  </span>
-                  <span className="font-semibold">
-                    {item.expectedPrice !== undefined ? money(item.expectedPrice) : "—"}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">
-                    {language === "uz" ? "Foyda (taxm.)" : "Profit (est.)"}
-                  </span>
-                  <span className="font-semibold">
-                    {profitEst !== undefined ? money(profitEst) : "—"}
-                  </span>
                 </div>
               </div>
             </div>

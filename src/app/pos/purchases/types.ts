@@ -1,5 +1,5 @@
 export type PhoneCondition = "GOOD" | "USED" | "BROKEN";
-export type PhoneStatus = "IN_STOCK" | "IN_REPAIR";
+export type PhoneStatus = "READY_FOR_SALE" | "IN_REPAIR" | "IN_STOCK";
 
 export type PaymentMethod = "CASH" | "CARD" | "OTHER";
 export type PaymentType = "PAID_NOW" | "PAY_LATER";

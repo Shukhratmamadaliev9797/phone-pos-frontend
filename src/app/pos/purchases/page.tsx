@@ -1,4 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 import { PurchasesFilters } from './components/purchases-filter'
 import { PurchasesPageHeader } from './components/purchases-header'
 import { PurchasesTable } from './components/purchases-table'
@@ -23,6 +33,7 @@ import {
   updatePurchase,
 } from '@/lib/api/purchases'
 import { canManagePurchases } from '@/lib/auth/permissions'
+import { updateInventoryItem } from '@/lib/api/inventory'
 
 const PAGE_LIMIT = 10
 
@@ -56,6 +67,8 @@ export default function PurchasesPage() {
 
   const [selectedListRow, setSelectedListRow] = useState<PurchaseListItem | null>(null)
   const [selectedDetail, setSelectedDetail] = useState<PurchaseDetail | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<PurchaseListItem | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   const canDelete =
     (currentRole === 'OWNER_ADMIN' || currentRole === 'ADMIN') &&
@@ -188,6 +201,33 @@ export default function PurchasesPage() {
     }
   }
 
+  async function handleMoveToRepair(row: PurchaseListItem) {
+    if (blockActionForViewer()) return
+
+    if (row.phoneStatus === 'IN_REPAIR') {
+      pushToast('error', 'Phone is already in repair')
+      return
+    }
+
+    try {
+      const detail = await getPurchase(row.id)
+      const targetItemId = detail.items?.[0]?.itemId
+
+      if (!targetItemId) {
+        pushToast('error', 'No phone found for this purchase')
+        return
+      }
+
+      await updateInventoryItem(targetItemId, { status: 'IN_REPAIR' })
+      pushToast('success', 'Phone moved to repair')
+      await loadList()
+    } catch (requestError) {
+      const message =
+        requestError instanceof Error ? requestError.message : 'Failed to move phone to repair'
+      pushToast('error', message)
+    }
+  }
+
   async function handleCreate(payload: CreatePurchasePayload) {
     if (blockActionForViewer()) return
 
@@ -208,13 +248,24 @@ export default function PurchasesPage() {
   async function handleDelete(row: PurchaseListItem) {
     if (blockActionForViewer()) return
     if (!canDelete) return
+    setDeleteTarget(row)
+  }
 
-    const confirmed = window.confirm(`Delete purchase #${row.id}?`)
-    if (!confirmed) return
-
-    await deletePurchase(row.id)
-    pushToast('success', 'Purchase deleted successfully')
-    await loadList()
+  async function handleConfirmDelete() {
+    if (!deleteTarget) return
+    try {
+      setDeleting(true)
+      await deletePurchase(deleteTarget.id)
+      pushToast('success', 'Purchase deleted successfully')
+      setDeleteTarget(null)
+      await loadList()
+    } catch (requestError) {
+      const message =
+        requestError instanceof Error ? requestError.message : 'Failed to delete purchase'
+      pushToast('error', message)
+    } finally {
+      setDeleting(false)
+    }
   }
 
   async function handleAddPayment(id: number, amount: number) {
@@ -332,6 +383,7 @@ export default function PurchasesPage() {
         onPageChange={setPage}
         onView={handleOpenDetails}
         onEdit={handleOpenEdit}
+        onMoveToRepair={handleMoveToRepair}
         onDelete={handleDelete}
       />
 
@@ -378,23 +430,60 @@ export default function PurchasesPage() {
         onSubmit={handleAddPayment}
       />
 
-      {toast ? (
-        <div
-          className={`fixed right-5 top-5 z-[90] transition-all duration-300 ease-out ${
-            toastVisible
-              ? 'translate-x-0 opacity-100'
-              : 'translate-x-[120%] opacity-0'
-          }`}
-        >
-          <div
-            className={`rounded-xl px-4 py-3 text-sm text-white shadow-lg ${
-              toast.type === 'success' ? 'bg-emerald-600' : 'bg-rose-600'
-            }`}
-          >
-            {toast.message}
-          </div>
-        </div>
-      ) : null}
+      <Dialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(next) => {
+          if (!next && !deleting) {
+            setDeleteTarget(null)
+          }
+        }}
+      >
+        <DialogContent className="max-w-md rounded-3xl">
+          <DialogHeader>
+            <DialogTitle>Delete purchase</DialogTitle>
+            <DialogDescription>
+              {deleteTarget
+                ? `Are you sure you want to delete purchase #${deleteTarget.id}? This action cannot be undone.`
+                : 'Are you sure?'}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              className="rounded-2xl"
+              onClick={() => setDeleteTarget(null)}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              className="rounded-2xl"
+              onClick={() => void handleConfirmDelete()}
+              disabled={deleting}
+            >
+              {deleting ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {toast
+        ? createPortal(
+            <div
+              className={`fixed bottom-5 right-5 z-[9999] transition-all duration-300 ease-out ${
+                toastVisible
+                  ? 'translate-x-0 opacity-100'
+                  : 'translate-x-[120%] opacity-0'
+              }`}
+            >
+              <div className="rounded-xl border border-emerald-500 bg-white px-4 py-3 text-sm text-emerald-700 shadow-lg dark:bg-background">
+                {toast.message}
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   )
 }

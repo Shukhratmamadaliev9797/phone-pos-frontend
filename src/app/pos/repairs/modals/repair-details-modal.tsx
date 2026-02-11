@@ -1,20 +1,18 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {  Pencil, CheckCircle2,  Save, RotateCcw, Plus } from "lucide-react";
+import { CheckCircle2, Pencil, Plus, Trash2 } from "lucide-react";
 import type {
   AddRepairEntryPayload,
   RepairDetail,
@@ -37,9 +35,18 @@ function statusPill(status: string) {
     : "bg-amber-500/15 text-amber-700 hover:bg-amber-500/15";
 }
 
-function toInputValue(value?: string | number | null): string {
-  if (value === null || value === undefined) return "";
-  return String(value);
+function inventoryStatusText(status?: string, language: string = "en") {
+  if (status === "IN_REPAIR") return language === "uz" ? "Ta'mirda" : "In repair";
+  if (status === "READY_FOR_SALE") return language === "uz" ? "Sotuvga tayyor" : "Ready for sale";
+  if (status === "SOLD") return language === "uz" ? "Sotilgan" : "Sold";
+  if (status === "RETURNED") return language === "uz" ? "Qaytarilgan" : "Returned";
+  return language === "uz" ? "Omborda" : "In stock";
+}
+
+function conditionText(condition?: string, language: string = "en") {
+  if (condition === "GOOD") return language === "uz" ? "Yaxshi" : "Good";
+  if (condition === "BROKEN") return language === "uz" ? "Nosoz" : "Broken";
+  return language === "uz" ? "Ishlatilgan" : "Used";
 }
 
 export function RepairDetailsModal({
@@ -49,6 +56,7 @@ export function RepairDetailsModal({
   canManage,
   onUpdateCase,
   onAddEntry,
+  onDeleteEntry,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -56,112 +64,89 @@ export function RepairDetailsModal({
   canManage: boolean;
   onUpdateCase: (id: number, payload: UpdateRepairCasePayload) => Promise<void>;
   onAddEntry: (id: number, payload: AddRepairEntryPayload) => Promise<void>;
+  onDeleteEntry: (entryId: number) => Promise<void>;
 }) {
   const { language } = useI18n();
-  const [isEditing, setIsEditing] = React.useState(false);
-  const [status, setStatus] = React.useState<"PENDING" | "DONE">("PENDING");
-  const [description, setDescription] = React.useState("");
-  const [notes, setNotes] = React.useState("");
-  const [totalCost, setTotalCost] = React.useState("0");
-  const [partsCost, setPartsCost] = React.useState("0");
-  const [laborCost, setLaborCost] = React.useState("0");
+  const [entriesOpen, setEntriesOpen] = React.useState(false);
+  const [editInfoOpen, setEditInfoOpen] = React.useState(false);
+  const [editDescription, setEditDescription] = React.useState("");
+  const [editNotes, setEditNotes] = React.useState("");
+  const [savingInfo, setSavingInfo] = React.useState(false);
   const [entryDescription, setEntryDescription] = React.useState("");
   const [entryCost, setEntryCost] = React.useState("");
-  const [busy, setBusy] = React.useState(false);
+  const [addingEntry, setAddingEntry] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (!repair) return;
-
-    setIsEditing(false);
-    setStatus((repair.status === "DONE" ? "DONE" : "PENDING") as "PENDING" | "DONE");
-    setDescription(repair.description ?? "");
-    setNotes(repair.notes ?? "");
-    setTotalCost(toInputValue(repair.costTotal));
-    setPartsCost(toInputValue(repair.partsCost));
-    setLaborCost(toInputValue(repair.laborCost));
+    setEditDescription(repair.description ?? "");
+    setEditNotes(repair.notes ?? "");
+    setEditInfoOpen(false);
+    setSavingInfo(false);
     setEntryDescription("");
     setEntryCost("");
-    setBusy(false);
+    setEntriesOpen(false);
+    setAddingEntry(false);
     setError(null);
   }, [repair, open]);
 
   if (!repair) return null;
 
   const currentRepair = repair;
+  const previewTotal = Number(currentRepair.costTotal ?? 0);
   const entries = currentRepair.entries ?? [];
-  const previewTotal = parseNum(totalCost);
 
-  const onCancelEdit = () => {
-    setIsEditing(false);
-    setStatus((currentRepair.status === "DONE" ? "DONE" : "PENDING") as "PENDING" | "DONE");
-    setDescription(currentRepair.description ?? "");
-    setNotes(currentRepair.notes ?? "");
-    setTotalCost(toInputValue(currentRepair.costTotal));
-    setPartsCost(toInputValue(currentRepair.partsCost));
-    setLaborCost(toInputValue(currentRepair.laborCost));
-    setError(null);
-  };
-
-  async function handleSave() {
-    if (!canManage) {
-      setError(language === "uz" ? "Ruxsat yo'q" : "Not allowed");
-      return;
-    }
-
-    if (!description.trim()) {
-      setError(language === "uz" ? "Tavsif kiritilishi shart" : "Description is required");
-      return;
-    }
-
+  async function handleSaveInfo() {
+    if (!canManage) return;
     try {
-      setBusy(true);
+      setSavingInfo(true);
       setError(null);
       await onUpdateCase(currentRepair.id, {
-        status,
-        description: description.trim(),
-        notes: notes.trim() || undefined,
-        costTotal: parseNum(totalCost),
-        partsCost: partsCost.trim() ? parseNum(partsCost) : undefined,
-        laborCost: laborCost.trim() ? parseNum(laborCost) : undefined,
+        description: editDescription.trim() || undefined,
+        notes: editNotes.trim() || undefined,
       });
-      setIsEditing(false);
+      setEditInfoOpen(false);
     } catch (requestError) {
       setError(
         requestError instanceof Error
           ? requestError.message
           : language === "uz"
-            ? "Ta'mir ishini yangilab bo'lmadi"
-            : "Failed to update repair case",
+            ? "Ta'mir ma'lumotini yangilab bo'lmadi"
+            : "Failed to update repair info",
       );
     } finally {
-      setBusy(false);
+      setSavingInfo(false);
     }
   }
 
   async function handleAddEntry() {
-    if (!canManage) {
-      setError(language === "uz" ? "Ruxsat yo'q" : "Not allowed");
-      return;
-    }
+    if (!canManage) return;
 
     if (!entryDescription.trim()) {
-      setError(language === "uz" ? "Band tavsifi kiritilishi shart" : "Entry description is required");
+      setError(
+        language === "uz"
+          ? "Xarajat tavsifi kiritilishi shart"
+          : "Cost description is required",
+      );
       return;
     }
 
-    const entryAmount = parseNum(entryCost);
-    if (entryAmount <= 0) {
-      setError(language === "uz" ? "Band narxi 0 dan katta bo'lishi kerak" : "Entry cost must be greater than 0");
+    const amount = parseNum(entryCost);
+    if (amount <= 0) {
+      setError(
+        language === "uz"
+          ? "Xarajat summasi 0 dan katta bo'lishi kerak"
+          : "Cost amount must be greater than 0",
+      );
       return;
     }
 
     try {
-      setBusy(true);
+      setAddingEntry(true);
       setError(null);
       await onAddEntry(currentRepair.id, {
         description: entryDescription.trim(),
-        costTotal: entryAmount,
+        costTotal: amount,
       });
       setEntryDescription("");
       setEntryCost("");
@@ -170,20 +155,17 @@ export function RepairDetailsModal({
         requestError instanceof Error
           ? requestError.message
           : language === "uz"
-            ? "Ta'mir bandini qo'shib bo'lmadi"
-            : "Failed to add repair entry",
+            ? "Xarajatni qo'shib bo'lmadi"
+            : "Failed to add cost update",
       );
     } finally {
-      setBusy(false);
+      setAddingEntry(false);
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={(v) => {
-      if (!v) setIsEditing(false);
-      onOpenChange(v);
-    }}>
-      <DialogContent className="max-w-4xl w-[min(94vw,56rem)] h-[90vh] p-0 overflow-hidden rounded-3xl">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl w-[min(94vw,56rem)] h-[90vh] p-0 overflow-hidden rounded-2xl">
         <div className="flex h-full min-h-0 flex-col">
           <div className="border-b p-6">
             <DialogHeader>
@@ -191,24 +173,19 @@ export function RepairDetailsModal({
                 <div>
                   <DialogTitle className="text-xl">
                     {language === "uz" ? "Ta'mir tafsilotlari" : "Repair details"}
-                    {isEditing && (
-                      <span className="ml-2 text-sm font-normal text-muted-foreground">
-                        {language === "uz" ? "(Tahrirlanmoqda)" : "(Editing)"}
-                      </span>
-                    )}
                   </DialogTitle>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    #{currentRepair.id} • {new Date(currentRepair.repairedAt || currentRepair.createdAt || Date.now()).toLocaleString()}
+                    {new Date(
+                      currentRepair.repairedAt || currentRepair.createdAt || Date.now(),
+                    ).toLocaleString()}
                   </p>
                 </div>
-
-                
               </div>
             </DialogHeader>
           </div>
 
           <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-6 space-y-6">
-            <div className="rounded-3xl border p-4">
+            <div className="rounded-2xl border p-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <div className="text-sm font-semibold">
@@ -221,8 +198,8 @@ export function RepairDetailsModal({
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge className={cn("rounded-full", statusPill(isEditing ? status : currentRepair.status))}>
-                    {(isEditing ? status : currentRepair.status) === "DONE"
+                  <Badge className={cn("rounded-2xl", statusPill(currentRepair.status))}>
+                    {currentRepair.status === "DONE"
                       ? language === "uz"
                         ? "Bajarilgan"
                         : "Done"
@@ -230,32 +207,68 @@ export function RepairDetailsModal({
                         ? "Kutilmoqda"
                         : "Pending"}
                   </Badge>
-
-                  <Badge variant="secondary" className="rounded-full">
-                    {currentRepair.technician?.fullName ||
-                      currentRepair.technician?.username ||
-                      (language === "uz" ? "Biriktirilmagan" : "Unassigned")}
-                  </Badge>
                 </div>
               </div>
+
+              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl border px-3 py-2">
+                  <div className="text-xs text-muted-foreground">IMEI</div>
+                  <div className="text-sm font-medium break-all">
+                    {currentRepair.item?.imei || "—"}
+                  </div>
+                </div>
+                <div className="rounded-2xl border px-3 py-2">
+                  <div className="text-xs text-muted-foreground">
+                    {language === "uz" ? "Xotira" : "Storage"}
+                  </div>
+                  <div className="text-sm font-medium">{currentRepair.item?.storage || "—"}</div>
+                </div>
+                <div className="rounded-2xl border px-3 py-2">
+                  <div className="text-xs text-muted-foreground">
+                    {language === "uz" ? "Holati" : "Condition"}
+                  </div>
+                  <div className="text-sm font-medium">
+                    {conditionText(currentRepair.item?.condition, language)}
+                  </div>
+                </div>
+                <div className="rounded-2xl border px-3 py-2">
+                  <div className="text-xs text-muted-foreground">Status</div>
+                  <div className="text-sm font-medium">
+                    {inventoryStatusText(currentRepair.item?.status, language)}
+                  </div>
+                </div>
+              </div>
+
+              {currentRepair.item?.knownIssues ? (
+                <div className="mt-3 rounded-2xl border px-3 py-2">
+                  <div className="text-xs text-muted-foreground">
+                    {language === "uz" ? "Aniqlangan muammolar" : "Known issues"}
+                  </div>
+                  <div className="text-sm font-medium break-words">
+                    {currentRepair.item.knownIssues}
+                  </div>
+                </div>
+              ) : null}
             </div>
 
-            <div className="rounded-3xl border p-4 space-y-4">
+            <div className="rounded-2xl border p-4 space-y-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="text-sm font-semibold">
                     {language === "uz" ? "Ta'mir ma'lumotlari" : "Repair info"}
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    {language === "uz" ? "Tavsif, izohlar va narxlar." : "Description, notes and costs."}
+                    {language === "uz"
+                      ? "Tavsif, izohlar va narxlar."
+                      : "Description, notes and costs."}
                   </div>
                 </div>
-
-                {!isEditing && canManage ? (
+                {canManage ? (
                   <Button
+                    type="button"
                     variant="outline"
                     className="rounded-2xl"
-                    onClick={() => setIsEditing(true)}
+                    onClick={() => setEditInfoOpen(true)}
                   >
                     <Pencil className="mr-2 h-4 w-4" />
                     {language === "uz" ? "Tahrirlash" : "Edit"}
@@ -265,158 +278,99 @@ export function RepairDetailsModal({
 
               <Separator />
 
-              {isEditing ? (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>{language === "uz" ? "Ta'mir holati" : "Repair status"}</Label>
-                    <Select value={status} onValueChange={(v) => setStatus(v as "PENDING" | "DONE")}> 
-                      <SelectTrigger className="h-10 rounded-2xl">
-                        <SelectValue placeholder={language === "uz" ? "Holat" : "Status"} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="PENDING">{language === "uz" ? "Kutilmoqda" : "Pending"}</SelectItem>
-                        <SelectItem value="DONE">{language === "uz" ? "Bajarilgan" : "Done"}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              ) : null}
-
               <div className="space-y-2">
                 <Label>{language === "uz" ? "Tavsif" : "Description"}</Label>
-                {isEditing ? (
-                  <Textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder={language === "uz" ? "Ta'mir tavsifini kiriting..." : "Describe the repair..."}
-                    className="min-h-[92px] rounded-2xl"
-                  />
-                ) : (
-                  <div className="rounded-2xl border bg-muted/10 p-3 text-sm text-muted-foreground">
-                    {currentRepair.description?.trim() ? currentRepair.description : "—"}
-                  </div>
-                )}
+                <div className="rounded-2xl border bg-muted/10 p-3 text-sm text-muted-foreground">
+                  {currentRepair.description?.trim() ? currentRepair.description : "—"}
+                </div>
               </div>
 
               <div className="space-y-2">
                 <Label>{language === "uz" ? "Izohlar" : "Notes"}</Label>
-                {isEditing ? (
-                  <Textarea
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder={language === "uz" ? "Ixtiyoriy izohlar..." : "Optional notes..."}
-                    className="min-h-[80px] rounded-2xl"
-                  />
-                ) : (
-                  <div className="rounded-2xl border bg-muted/10 p-3 text-sm text-muted-foreground">
-                    {currentRepair.notes?.trim() ? currentRepair.notes : "—"}
-                  </div>
-                )}
-              </div>
-
-              <Separator />
-
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className="space-y-2">
-                  <Label>{language === "uz" ? "Jami narx" : "Total cost"}</Label>
-                  {isEditing ? (
-                    <Input
-                      value={totalCost}
-                      onChange={(e) => setTotalCost(e.target.value)}
-                      inputMode="numeric"
-                      placeholder="0"
-                      className="h-10 rounded-2xl"
-                    />
-                  ) : (
-                    <div className="rounded-2xl border bg-muted/10 p-3 text-sm">
-                      <span className="font-medium">{money(Number(currentRepair.costTotal ?? 0))}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label>{language === "uz" ? "Qismlar narxi" : "Parts cost"}</Label>
-                  <Input
-                    value={partsCost}
-                    onChange={(e) => setPartsCost(e.target.value)}
-                    inputMode="numeric"
-                    placeholder="0"
-                    className="h-10 rounded-2xl"
-                    disabled={!isEditing}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>{language === "uz" ? "Ish haqi narxi" : "Labor cost"}</Label>
-                  <Input
-                    value={laborCost}
-                    onChange={(e) => setLaborCost(e.target.value)}
-                    inputMode="numeric"
-                    placeholder="0"
-                    className="h-10 rounded-2xl"
-                    disabled={!isEditing}
-                  />
-                </div>
-              </div>
-
-              <div className="rounded-2xl border bg-muted/10 p-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="text-xs text-muted-foreground">
-                    {language === "uz" ? "Oldindan jami" : "Preview total"}
-                  </div>
-                  <div className="text-sm font-semibold">{money(previewTotal)}</div>
+                <div className="rounded-2xl border bg-muted/10 p-3 text-sm text-muted-foreground">
+                  {currentRepair.notes?.trim() ? currentRepair.notes : "—"}
                 </div>
               </div>
             </div>
 
-            <div className="rounded-3xl border p-4 space-y-3">
-              <div className="flex items-center justify-between gap-3">
-                <div className="text-sm font-semibold">
-                  {language === "uz" ? "Ta'mir bandlari" : "Repair entries"}
+            <div className="rounded-2xl border p-4 space-y-4">
+              <div className="text-sm font-semibold">
+                {language === "uz" ? "Ta'mir xarajatlari" : "Repair costs"}
+              </div>
+
+              <div className="space-y-2">
+                <Label>{language === "uz" ? "Xarajat yozuvlari" : "Cost updates"}</Label>
+                {entries.length === 0 ? (
+                  <div className="rounded-2xl border bg-muted/10 p-3 text-sm text-muted-foreground">
+                    {language === "uz" ? "Hali xarajat kiritilmagan." : "No cost updates yet."}
+                  </div>
+                ) : (
+                  <div className="max-h-44 space-y-2 overflow-y-auto pr-1">
+                    {entries
+                      .slice()
+                      .sort((a, b) => {
+                        const aTime = new Date(a.entryAt || a.repairedAt || 0).getTime();
+                        const bTime = new Date(b.entryAt || b.repairedAt || 0).getTime();
+                        return bTime - aTime;
+                      })
+                      .map((entry) => (
+                        <div key={entry.id} className="rounded-2xl border bg-muted/10 p-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="text-sm font-medium">{entry.description || "—"}</div>
+                            <div className="text-sm font-semibold">
+                              {money(Number(entry.costTotal ?? 0))}
+                            </div>
+                          </div>
+                          <div className="mt-1 text-xs text-muted-foreground">
+                            {new Date(entry.entryAt || entry.repairedAt || Date.now()).toLocaleString()}
+                          </div>
+                          {canManage ? (
+                            <div className="mt-2 flex justify-end">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="rounded-2xl border-rose-300 text-rose-700 hover:bg-rose-50"
+                                onClick={async () => {
+                                  try {
+                                    setError(null);
+                                    await onDeleteEntry(entry.id);
+                                  } catch (requestError) {
+                                    setError(
+                                      requestError instanceof Error
+                                        ? requestError.message
+                                        : language === "uz"
+                                          ? "Xarajat yozuvini o'chirib bo'lmadi"
+                                          : "Failed to delete cost update",
+                                    );
+                                  }
+                                }}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                {language === "uz" ? "O'chirish" : "Delete"}
+                              </Button>
+                            </div>
+                          ) : null}
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label>{language === "uz" ? "Jami narx" : "Total cost"}</Label>
+                <div className="rounded-2xl border bg-muted/10 p-3 text-sm">
+                  <span className="font-medium">{money(previewTotal)}</span>
                 </div>
               </div>
 
-              {entries.length === 0 ? (
-                <div className="rounded-2xl border bg-muted/10 p-3 text-sm text-muted-foreground">
-                  {language === "uz" ? "Hali bandlar yo'q." : "No entries yet."}
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {entries.map((entry) => (
-                    <div key={entry.id} className="rounded-2xl border bg-muted/10 p-3">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="text-sm font-medium">{entry.description}</div>
-                        <div className="text-sm font-semibold">{money(Number(entry.costTotal ?? 0))}</div>
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {new Date(entry.entryAt || entry.repairedAt || Date.now()).toLocaleString()}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {canManage ? (
-                <div className="grid gap-3 sm:grid-cols-[1fr_180px_auto]">
-                  <Input
-                    placeholder={language === "uz" ? "Band tavsifi" : "Entry description"}
-                    value={entryDescription}
-                    onChange={(event) => setEntryDescription(event.target.value)}
-                    className="h-10 rounded-2xl"
-                  />
-                  <Input
-                    placeholder={language === "uz" ? "Narx" : "Cost"}
-                    value={entryCost}
-                    onChange={(event) => setEntryCost(event.target.value)}
-                    inputMode="numeric"
-                    className="h-10 rounded-2xl"
-                  />
-                  <Button className="rounded-2xl" onClick={handleAddEntry} disabled={busy}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    {language === "uz" ? "Band qo'shish" : "Add entry"}
-                  </Button>
-                </div>
-              ) : null}
+              <Button
+                type="button"
+                className="w-full rounded-2xl"
+                onClick={() => setEntriesOpen(true)}
+              >
+                {language === "uz" ? "Ta'mir xarajatini yangilash" : "Update repair cost"}
+              </Button>
             </div>
 
             {error ? (
@@ -434,42 +388,151 @@ export function RepairDetailsModal({
 
               {canManage ? (
                 <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                  {isEditing ? (
-                    <>
-                      <Button variant="outline" className="rounded-2xl" onClick={onCancelEdit}>
-                        <RotateCcw className="mr-2 h-4 w-4" />
-                        {language === "uz" ? "Bekor qilish" : "Cancel"}
-                      </Button>
-
-                      <Button className="rounded-2xl" onClick={handleSave} disabled={busy}>
-                        <Save className="mr-2 h-4 w-4" />
-                        {language === "uz" ? "O'zgarishlarni saqlash" : "Save changes"}
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <Button
-                        variant="outline"
-                        className="rounded-2xl"
-                        onClick={() => {
-                          if (currentRepair.status === "DONE") return;
-                          void onUpdateCase(currentRepair.id, { status: "DONE" });
-                        }}
-                        disabled={currentRepair.status === "DONE"}
-                      >
-                        <CheckCircle2 className="mr-2 h-4 w-4" />
-                        {language === "uz" ? "Bajarildi deb belgilash" : "Mark Done"}
-                      </Button>
-
-                      
-                    </>
-                  )}
+                  <Button
+                    variant="outline"
+                    className="rounded-2xl"
+                    onClick={() => {
+                      if (currentRepair.status === "DONE") return;
+                      void onUpdateCase(currentRepair.id, {
+                        status: "DONE",
+                      });
+                    }}
+                    disabled={currentRepair.status === "DONE"}
+                  >
+                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                    {language === "uz" ? "Bajarildi deb belgilash" : "Mark Done"}
+                  </Button>
                 </div>
               ) : null}
             </div>
           </div>
         </div>
       </DialogContent>
+
+      <Dialog open={entriesOpen} onOpenChange={setEntriesOpen}>
+        <DialogContent className="max-w-2xl w-[min(94vw,42rem)] h-[78vh] p-0 overflow-hidden rounded-2xl">
+          <div className="flex h-full min-h-0 flex-col">
+            <div className="border-b p-6">
+              <DialogHeader>
+                <DialogTitle className="text-xl">
+                  {language === "uz" ? "Xarajat tarixi" : "Cost updates"}
+                </DialogTitle>
+              </DialogHeader>
+            </div>
+
+            <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-4">
+              {entries.length === 0 ? (
+                <div className="rounded-2xl border bg-muted/10 p-3 text-sm text-muted-foreground">
+                  {language === "uz" ? "Hali bandlar yo'q." : "No entries yet."}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {entries.map((entry) => (
+                    <div key={entry.id} className="rounded-2xl border bg-muted/10 p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="text-sm font-medium">{entry.description}</div>
+                        <div className="text-sm font-semibold">
+                          {money(Number(entry.costTotal ?? 0))}
+                        </div>
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {new Date(entry.entryAt || entry.repairedAt || Date.now()).toLocaleString()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {canManage ? (
+                <div className="space-y-3">
+                  <Textarea
+                    placeholder={language === "uz" ? "Xarajat tavsifi" : "Cost description"}
+                    value={entryDescription}
+                    onChange={(event) => setEntryDescription(event.target.value)}
+                    className="min-h-[92px] rounded-2xl"
+                  />
+                  <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+                    <Input
+                      placeholder={language === "uz" ? "Xarajat summasi" : "Cost amount"}
+                      value={entryCost}
+                      onChange={(event) => setEntryCost(event.target.value)}
+                      inputMode="numeric"
+                      className="h-10 rounded-2xl"
+                    />
+                    <Button
+                      className="rounded-2xl sm:min-w-[170px]"
+                      onClick={handleAddEntry}
+                      disabled={addingEntry}
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      {language === "uz" ? "Xarajat qo'shish" : "Add cost"}
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
+
+              {error ? (
+                <div className="rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                  {error}
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={editInfoOpen} onOpenChange={setEditInfoOpen}>
+        <DialogContent className="max-w-xl w-[min(94vw,36rem)] p-0 overflow-hidden rounded-2xl">
+          <div className="border-b p-6">
+            <DialogHeader>
+              <DialogTitle className="text-xl">
+                {language === "uz" ? "Ta'mir ma'lumotini tahrirlash" : "Edit repair info"}
+              </DialogTitle>
+            </DialogHeader>
+          </div>
+
+          <div className="space-y-4 p-6">
+            <div className="space-y-2">
+              <Label>{language === "uz" ? "Tavsif" : "Description"}</Label>
+              <Textarea
+                value={editDescription}
+                onChange={(event) => setEditDescription(event.target.value)}
+                className="min-h-[92px] rounded-2xl"
+                placeholder={language === "uz" ? "Ta'mir tavsifi" : "Repair description"}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>{language === "uz" ? "Izohlar" : "Notes"}</Label>
+              <Textarea
+                value={editNotes}
+                onChange={(event) => setEditNotes(event.target.value)}
+                className="min-h-[92px] rounded-2xl"
+                placeholder={language === "uz" ? "Qo'shimcha izohlar" : "Additional notes"}
+              />
+            </div>
+          </div>
+
+          <div className="border-t p-4">
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Button
+                variant="outline"
+                className="rounded-2xl"
+                onClick={() => setEditInfoOpen(false)}
+              >
+                {language === "uz" ? "Bekor qilish" : "Cancel"}
+              </Button>
+              <Button
+                className="rounded-2xl"
+                onClick={handleSaveInfo}
+                disabled={savingInfo}
+              >
+                {language === "uz" ? "Saqlash" : "Save"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }

@@ -18,12 +18,17 @@ import type {
   UpdateInventoryItemPayload,
 } from "@/lib/api/inventory";
 import { useI18n } from "@/lib/i18n/provider";
+import {
+  getPhoneModelsByBrand,
+  PHONE_BRAND_OPTIONS,
+  PHONE_STORAGE_OPTIONS,
+} from "@/lib/constants/phone-options";
 
 type FormValue = {
   imei: string;
-  serialNumber: string;
   brand: string;
   model: string;
+  storage: string;
   condition: InventoryCondition;
   status: InventoryStatus;
   knownIssues: string;
@@ -33,11 +38,11 @@ type FormValue = {
 function toInitial(item: InventoryRow | null): FormValue {
   return {
     imei: item?.imei ?? "",
-    serialNumber: "",
     brand: item?.brand ?? "",
     model: item?.model ?? "",
+    storage: item?.storage ?? "",
     condition: item?.condition ?? "USED",
-    status: item?.status ?? "IN_STOCK",
+    status: item?.status ?? "READY_FOR_SALE",
     knownIssues: item?.knownIssues ?? "",
     expectedSalePrice:
       item?.expectedPrice !== undefined ? String(item.expectedPrice) : "",
@@ -61,6 +66,10 @@ export function EditInventoryItemModal({
   const [value, setValue] = React.useState<FormValue>(toInitial(item));
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const modelOptions = React.useMemo(
+    () => getPhoneModelsByBrand(value.brand),
+    [value.brand],
+  );
 
   React.useEffect(() => {
     if (open) {
@@ -75,7 +84,8 @@ export function EditInventoryItemModal({
     !saving &&
     value.imei.trim().length > 0 &&
     value.brand.trim().length > 0 &&
-    value.model.trim().length > 0;
+    value.model.trim().length > 0 &&
+    Number(value.expectedSalePrice) >= 0;
 
   async function handleSave() {
     if (!item) return;
@@ -90,9 +100,9 @@ export function EditInventoryItemModal({
 
     const payload: UpdateInventoryItemPayload = {
       imei: value.imei.trim(),
-      serialNumber: value.serialNumber.trim() || null,
       brand: value.brand.trim(),
       model: value.model.trim(),
+      storage: value.storage.trim() || null,
       condition: value.condition,
       status: value.status,
       knownIssues: value.knownIssues.trim() || null,
@@ -128,35 +138,85 @@ export function EditInventoryItemModal({
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label>IMEI</Label>
-            <Input
-              value={value.imei}
-              onChange={(e) => setValue((p) => ({ ...p, imei: e.target.value }))}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>{language === "uz" ? "Seriya raqami" : "Serial Number"}</Label>
-            <Input
-              value={value.serialNumber}
-              onChange={(e) =>
-                setValue((p) => ({ ...p, serialNumber: e.target.value }))
+            <Label>{language === "uz" ? "Brend" : "Brand"}</Label>
+            <Select
+              value={value.brand || undefined}
+              onValueChange={(selected) =>
+                setValue((p) => ({ ...p, brand: selected, model: "" }))
               }
-            />
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue
+                  placeholder={
+                    language === "uz" ? "Brendni tanlang" : "Select brand"
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent className="w-[--radix-select-trigger-width]">
+                {PHONE_BRAND_OPTIONS.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
-            <Label>{language === "uz" ? "Brend" : "Brand"}</Label>
-            <Input
-              value={value.brand}
-              onChange={(e) => setValue((p) => ({ ...p, brand: e.target.value }))}
-            />
-          </div>
-          <div className="space-y-2">
             <Label>{language === "uz" ? "Model" : "Model"}</Label>
-            <Input
-              value={value.model}
-              onChange={(e) => setValue((p) => ({ ...p, model: e.target.value }))}
-            />
+            <Select
+              value={value.model || undefined}
+              onValueChange={(selected) =>
+                setValue((p) => ({ ...p, model: selected }))
+              }
+              disabled={!value.brand}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue
+                  placeholder={
+                    !value.brand
+                      ? language === "uz"
+                        ? "Avval brendni tanlang"
+                        : "Select brand first"
+                      : language === "uz"
+                        ? "Modelni tanlang"
+                        : "Select model"
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent className="w-[--radix-select-trigger-width]">
+                {modelOptions.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>{language === "uz" ? "Xotira" : "Storage"}</Label>
+            <Select
+              value={value.storage}
+              onValueChange={(selected) =>
+                setValue((p) => ({ ...p, storage: selected }))
+              }
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue
+                  placeholder={
+                    language === "uz" ? "Xotirani tanlang" : "Select storage"
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent className="w-[--radix-select-trigger-width]">
+                {PHONE_STORAGE_OPTIONS.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
@@ -167,15 +227,23 @@ export function EditInventoryItemModal({
                 setValue((p) => ({ ...p, condition: v as InventoryCondition }))
               }
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="w-[--radix-select-trigger-width]">
                 <SelectItem value="GOOD">{language === "uz" ? "Yaxshi" : "Good"}</SelectItem>
                 <SelectItem value="USED">{language === "uz" ? "Ishlatilgan" : "Used"}</SelectItem>
                 <SelectItem value="BROKEN">{language === "uz" ? "Nosoz" : "Broken"}</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>IMEI</Label>
+            <Input
+              value={value.imei}
+              onChange={(e) => setValue((p) => ({ ...p, imei: e.target.value }))}
+            />
           </div>
 
           <div className="space-y-2">
@@ -186,25 +254,22 @@ export function EditInventoryItemModal({
                 setValue((p) => ({ ...p, status: v as InventoryStatus }))
               }
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="IN_STOCK">{language === "uz" ? "Omborda" : "In Stock"}</SelectItem>
+              <SelectContent className="w-[--radix-select-trigger-width]">
                 <SelectItem value="IN_REPAIR">{language === "uz" ? "Ta'mirda" : "In Repair"}</SelectItem>
                 <SelectItem value="READY_FOR_SALE">
                   {language === "uz" ? "Sotuvga tayyor" : "Ready for Sale"}
                 </SelectItem>
-                <SelectItem value="SOLD">{language === "uz" ? "Sotilgan" : "Sold"}</SelectItem>
-                <SelectItem value="RETURNED">{language === "uz" ? "Qaytarilgan" : "Returned"}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2 sm:col-span-2">
-            <Label>{language === "uz" ? "Kutilgan sotuv narxi" : "Expected Sale Price"}</Label>
+            <Label>{language === "uz" ? "Narx" : "Price"}</Label>
             <Input
-              placeholder={language === "uz" ? "masalan: 6500000" : "e.g. 6500000"}
+              placeholder={language === "uz" ? "masalan: 6 500 000 so'm" : "e.g. 6,500,000 so'm"}
               inputMode="decimal"
               value={value.expectedSalePrice}
               onChange={(e) =>

@@ -1,5 +1,6 @@
 // src/components/pos/help/help-page-header.tsx
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -176,21 +177,20 @@ export function HelpPageHeader({ role }: HelpPageHeaderProps) {
         </DialogContent>
       </Dialog>
 
-      {toast ? (
-        <div
-          className={`fixed right-6 top-6 z-[90] transition-all duration-300 ${
-            toastVisible ? "translate-x-0 opacity-100" : "translate-x-[120%] opacity-0"
-          }`}
-        >
-          <div
-            className={`rounded-2xl px-4 py-3 text-sm font-medium text-white shadow-lg ${
-              toast.type === "success" ? "bg-emerald-600" : "bg-rose-600"
-            }`}
-          >
-            {toast.message}
-          </div>
-        </div>
-      ) : null}
+      {toast
+        ? createPortal(
+            <div
+              className={`fixed bottom-6 right-6 z-[9999] transition-all duration-300 ${
+                toastVisible ? "translate-x-0 opacity-100" : "translate-x-[120%] opacity-0"
+              }`}
+            >
+              <div className="rounded-2xl border border-emerald-500 bg-white px-4 py-3 text-sm font-medium text-emerald-700 shadow-lg dark:bg-background">
+                {toast.message}
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </>
   );
 }

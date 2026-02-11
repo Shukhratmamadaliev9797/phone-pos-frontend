@@ -76,16 +76,16 @@ function StatusBadge({ status }: { status: InventoryStatus }) {
   const label =
     status === "IN_STOCK"
       ? language === "uz"
-        ? "Omborda"
-        : "In Stock"
+        ? "Sotuvga tayyor"
+        : "Ready for sale"
       : status === "IN_REPAIR"
       ? language === "uz"
         ? "Ta'mirda"
         : "In Repair"
       : status === "READY_FOR_SALE"
       ? language === "uz"
-        ? "Tayyor"
-        : "Ready"
+        ? "Sotuvga tayyor"
+        : "Ready for sale"
       : status === "SOLD"
       ? language === "uz"
         ? "Sotilgan"
@@ -227,20 +227,17 @@ export function InventoryTable({
                 <TableHead className="min-w-[220px]">{language === "uz" ? "Nomi" : "Item"}</TableHead>
                 <TableHead className="min-w-[160px]">{language === "uz" ? "Xotira" : "Storage"}</TableHead>
                 <TableHead>{language === "uz" ? "Holati" : "Condition"}</TableHead>
-                <TableHead>{language === "uz" ? "Holat" : "Status"}</TableHead>
-                <TableHead className="text-right">{language === "uz" ? "Tannarx" : "Cost"}</TableHead>
-                <TableHead className="text-right">{language === "uz" ? "Kutilgan" : "Expected"}</TableHead>
-                <TableHead className="text-right">
-                  {language === "uz" ? "Foyda (taxm.)" : "Profit (est.)"}
-                </TableHead>
-                <TableHead className="w-[60px] text-right"> </TableHead>
-              </TableRow>
-            </TableHeader>
+              <TableHead>{language === "uz" ? "Holat" : "Status"}</TableHead>
+              <TableHead>{language === "uz" ? "Turi" : "Type"}</TableHead>
+              <TableHead className="text-right">{language === "uz" ? "Narx" : "Price"}</TableHead>
+              <TableHead className="w-[60px] text-right"> </TableHead>
+            </TableRow>
+          </TableHeader>
 
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="py-10 text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
                     {language === "uz" ? "Inventar yuklanmoqda..." : "Loading inventory..."}
                   </TableCell>
                 </TableRow>
@@ -248,7 +245,7 @@ export function InventoryTable({
 
               {!loading && error ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="py-10 text-center text-sm text-rose-600">
+                  <TableCell colSpan={7} className="py-10 text-center text-sm text-rose-600">
                     {error}
                   </TableCell>
                 </TableRow>
@@ -276,13 +273,19 @@ export function InventoryTable({
                     <StatusBadge status={row.status} />
                   </TableCell>
 
-                  <TableCell className="text-right">{money(row.cost)}</TableCell>
-                  <TableCell className="text-right">
-                    {row.expectedPrice ? money(row.expectedPrice) : "—"}
+                  <TableCell>
+                    <span className="text-sm">
+                      {row.purchaseId
+                        ? language === "uz"
+                          ? "Sotib olingan telefon"
+                          : "Purchased phone"
+                        : language === "uz"
+                          ? "Admin tomonidan qo'shilgan"
+                          : "Added by admin"}
+                    </span>
                   </TableCell>
-                  <TableCell className="text-right">
-                    {row.profitEst ? money(row.profitEst) : "—"}
-                  </TableCell>
+
+                  <TableCell className="text-right">{money(row.purchaseCost ?? 0)}</TableCell>
 
                   <TableCell
                     className="text-right"
@@ -312,8 +315,8 @@ export function InventoryTable({
                             >
                               {row.status === "IN_REPAIR"
                                 ? language === "uz"
-                                  ? "Bajarildi deb belgilash"
-                                  : "Mark done"
+                                  ? "Sotuvga tayyor"
+                                  : "Ready for sale"
                                 : language === "uz"
                                   ? "Ta'mirga o'tkazish"
                                   : "In repair"}
@@ -338,7 +341,7 @@ export function InventoryTable({
 
               {!loading && !error && rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="py-10 text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
                     {language === "uz"
                       ? "Inventarda telefonlar topilmadi."
                       : "No inventory phones found."}

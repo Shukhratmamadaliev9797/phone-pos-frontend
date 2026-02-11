@@ -37,7 +37,7 @@ function PaymentTypeBadge({ type }: { type: 'PAID_NOW' | 'PAY_LATER' }) {
           : 'bg-emerald-500/10 text-emerald-700 border-emerald-200',
       )}
     >
-      {isLater ? 'Pay later' : 'Paid now'}
+      {isLater ? 'Pay later' : 'Full payment'}
     </Badge>
   )
 }
@@ -82,6 +82,7 @@ export function PurchasesTable({
   onPageChange,
   onView,
   onEdit,
+  onMoveToRepair,
   onDelete,
 }: {
   rows: PurchaseListItem[]
@@ -95,6 +96,7 @@ export function PurchasesTable({
   onPageChange: (nextPage: number) => void
   onView: (row: PurchaseListItem) => void
   onEdit: (row: PurchaseListItem) => void
+  onMoveToRepair: (row: PurchaseListItem) => void
   onDelete: (row: PurchaseListItem) => void
 }) {
   const { language } = useI18n()
@@ -116,7 +118,7 @@ export function PurchasesTable({
               <TableHead>Status</TableHead>
 
               <TableHead className="text-right">Total</TableHead>
-              <TableHead className="text-right">Paid now</TableHead>
+              <TableHead className="text-right">Paid</TableHead>
               <TableHead className="text-right">Remaining</TableHead>
               <TableHead>Payment type</TableHead>
               <TableHead className="w-[60px] text-right"> </TableHead>
@@ -174,7 +176,12 @@ export function PurchasesTable({
                       <DropdownMenuItem onClick={() => onView(row)}>View details</DropdownMenuItem>
 
                       {canManage ? (
-                        <DropdownMenuItem onClick={() => onEdit(row)}>Edit</DropdownMenuItem>
+                        <>
+                          <DropdownMenuItem onClick={() => onEdit(row)}>Edit</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onMoveToRepair(row)}>
+                            In repair
+                          </DropdownMenuItem>
+                        </>
                       ) : null}
 
                       {canDelete ? (

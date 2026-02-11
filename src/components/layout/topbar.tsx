@@ -35,9 +35,16 @@ export function Topbar({ onOpenMobileSidebar, className }: TopbarProps) {
   const [isSuggestionsOpen, setIsSuggestionsOpen] = React.useState(false);
   const [detailsOpen, setDetailsOpen] = React.useState(false);
   const [selectedItem, setSelectedItem] = React.useState<InventoryRow | null>(null);
-  const [theme, setThemeState] = React.useState<"light" | "dark" | "system">(
-    () => getStoredTheme(),
-  );
+  const [theme, setThemeState] = React.useState<"light" | "dark">(() => {
+    const stored = getStoredTheme();
+    if (stored === "light" || stored === "dark") {
+      return stored;
+    }
+    if (typeof document !== "undefined") {
+      return document.documentElement.classList.contains("dark") ? "dark" : "light";
+    }
+    return "light";
+  });
   const [unreadCount, setUnreadCount] = React.useState(0);
   const searchContainerRef = React.useRef<HTMLDivElement | null>(null);
 
@@ -140,7 +147,8 @@ export function Topbar({ onOpenMobileSidebar, className }: TopbarProps) {
   }
 
   function handleThemeToggle(event: React.MouseEvent<HTMLButtonElement>) {
-    const next = theme === "dark" ? "light" : "dark";
+    const isCurrentlyDark = document.documentElement.classList.contains("dark");
+    const next = isCurrentlyDark ? "light" : "dark";
     const rect = event.currentTarget.getBoundingClientRect();
     setTheme(next, {
       x: rect.left + rect.width / 2,

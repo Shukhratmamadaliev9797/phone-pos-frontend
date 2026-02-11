@@ -1,15 +1,18 @@
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { Navigate } from "react-router-dom";
 import { RepairsFilters } from "./components/repair-filters";
 import { RepairsPageHeader } from "./components/repair-header";
 import { RepairsSummary } from "./components/repair-summary";
 import { RepairsTable, type RepairRow } from "./components/repair-tables";
+import { InventoryPagination } from "../inventory/components/inventory-pagination";
 import { NewRepairModal } from "./modals/new-repair-modal";
 import { RepairDetailsModal } from "./modals/repair-details-modal";
 import {
   addRepairEntry,
   ApiRequestError,
   createRepairCase,
+  deleteRepairEntry,
   getRepairCase,
   listRepairableInventory,
   listRepairs,
@@ -44,7 +47,7 @@ function toRepairRow(item: RepairListItem): RepairRow {
   return {
     id: String(item.id),
     dateTime: formatDateOnly(item.repairedAt || item.createdAt),
-    itemName: itemName || `#${item.itemId ?? item.item?.id ?? "—"}`,
+    itemName: itemName,
     imei: item.item?.imei,
     technician: item.technician?.fullName || item.technician?.username || undefined,
     status: item.status === "DONE" ? "DONE" : "PENDING",
@@ -67,7 +70,6 @@ export default function RepairsPage() {
   const [error, setError] = React.useState<string | null>(null);
   const [page, setPage] = React.useState(1);
   const [total, setTotal] = React.useState(0);
-  const [totalPages, setTotalPages] = React.useState(1);
   const [search, setSearch] = React.useState("");
   const [searchDebounced, setSearchDebounced] = React.useState("");
   const [status, setStatus] = React.useState<"all" | "PENDING" | "DONE">("all");
@@ -132,7 +134,6 @@ export default function RepairsPage() {
       const response = await listRepairs(params);
       setRows((response.data ?? []).map(toRepairRow));
       setTotal(response.meta?.total ?? response.data.length);
-      setTotalPages(response.meta?.totalPages ?? 1);
     } catch (requestError) {
       if (requestError instanceof ApiRequestError && requestError.status === 401) {
         setError(
@@ -196,10 +197,10 @@ export default function RepairsPage() {
   }
 
   const summary = React.useMemo(() => {
-    const totalRepairs = rows.length;
+    const totalRepairs = rows.filter((row) => row.status === "DONE").length;
     const totalSpending = rows.reduce((sum, row) => sum + row.totalCost, 0);
     const pendingCount = rows.filter((row) => row.status === "PENDING").length;
-    const avgCost = totalRepairs > 0 ? totalSpending / totalRepairs : 0;
+    const avgCost = rows.length > 0 ? totalSpending / rows.length : 0;
 
     const technicianCounter = new Map<string, number>();
     rows.forEach((row) => {
@@ -275,6 +276,18 @@ export default function RepairsPage() {
     await loadRepairs();
   }
 
+  async function handleDeleteEntry(entryId: number): Promise<void> {
+    if (guardManageAction()) return;
+
+    const updated = await deleteRepairEntry(entryId);
+    setSelectedDetail(updated);
+    pushToast(
+      "success",
+      language === "uz" ? "Xarajat yozuvi o'chirildi" : "Cost update deleted",
+    );
+    await loadRepairs();
+  }
+
   return (
     <div className="space-y-6">
       <RepairsPageHeader
@@ -326,46 +339,20 @@ export default function RepairsPage() {
           if (guardManageAction()) return;
           void openDetails(row);
         }}
-        onMarkDone={(row) => {
-          if (guardManageAction()) return;
-          void handleUpdateCase(Number(row.id), { status: "DONE" });
-        }}
         onMarkReady={(row) => {
           if (guardManageAction()) return;
           void handleUpdateCase(Number(row.id), {
-            notes: row.notes
-              ? `${row.notes}\n${language === "uz" ? "Sotuvga tayyor deb belgilandi" : "Marked ready for sale"}`
-              : language === "uz"
-                ? "Sotuvga tayyor deb belgilandi"
-                : "Marked ready for sale",
+            status: "DONE",
+            notes: row.notes ?? undefined,
           });
         }}
       />
-
-      <div className="flex justify-end text-xs text-muted-foreground">
-        {language === "uz" ? "Sahifa" : "Page"} {page} / {totalPages} • {rows.length}{" "}
-        {language === "uz" ? "ta ko'rsatilgan" : "shown"} • {total}{" "}
-        {language === "uz" ? "jami" : "total"}
-      </div>
-
-      <div className="flex justify-end gap-2">
-        <button
-          type="button"
-          className="rounded-xl border px-3 py-1 text-sm disabled:opacity-50"
-          disabled={page <= 1}
-          onClick={() => setPage((prev) => prev - 1)}
-        >
-          {language === "uz" ? "Oldingi" : "Prev"}
-        </button>
-        <button
-          type="button"
-          className="rounded-xl border px-3 py-1 text-sm disabled:opacity-50"
-          disabled={page >= totalPages}
-          onClick={() => setPage((prev) => prev + 1)}
-        >
-          {language === "uz" ? "Keyingi" : "Next"}
-        </button>
-      </div>
+      <InventoryPagination
+        page={page}
+        pageSize={PAGE_LIMIT}
+        total={total}
+        onPageChange={setPage}
+      />
 
       <NewRepairModal
         open={newOpen}
@@ -396,23 +383,25 @@ export default function RepairsPage() {
         onAddEntry={async (id, payload) => {
           await handleAddEntry(id, payload);
         }}
+        onDeleteEntry={async (entryId) => {
+          await handleDeleteEntry(entryId);
+        }}
       />
 
-      {toast ? (
-        <div
-          className={`fixed right-5 top-5 z-[90] transition-all duration-300 ease-out ${
-            toastVisible ? "translate-x-0 opacity-100" : "translate-x-[120%] opacity-0"
-          }`}
-        >
-          <div
-            className={`rounded-xl px-4 py-3 text-sm text-white shadow-lg ${
-              toast.type === "success" ? "bg-emerald-600" : "bg-rose-600"
-            }`}
-          >
-            {toast.message}
-          </div>
-        </div>
-      ) : null}
+      {toast
+        ? createPortal(
+            <div
+              className={`fixed bottom-5 right-5 z-[9999] transition-all duration-300 ease-out ${
+                toastVisible ? "translate-x-0 opacity-100" : "translate-x-[120%] opacity-0"
+              }`}
+            >
+              <div className="rounded-xl border border-emerald-500 bg-white px-4 py-3 text-sm text-emerald-700 shadow-lg dark:bg-background">
+                {toast.message}
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }

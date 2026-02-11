@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { createPortal } from 'react-dom'
 import { Navigate } from 'react-router-dom'
 import { WorkersTable, type WorkerRow } from './components/workers-table'
 import { WorkersPageHeader } from './components/workers-header'
@@ -13,6 +14,7 @@ import {
   addSalaryPayment,
   ApiRequestError,
   createWorker,
+  deleteWorker,
   getWorker,
   listSalaryPayments,
   listWorkers,
@@ -25,6 +27,15 @@ import {
 } from '@/lib/api/workers'
 import { canManageWorkers } from '@/lib/auth/permissions'
 import { useI18n } from '@/lib/i18n/provider'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 
 const PAGE_LIMIT = 10
 
@@ -77,6 +88,8 @@ export default function WorkersPage() {
   const [selectedDetails, setSelectedDetails] = React.useState<WorkerDetailsView | null>(null)
   const [selectedPayments, setSelectedPayments] = React.useState<SalaryPaymentView[]>([])
   const [detailsLoading, setDetailsLoading] = React.useState(false)
+  const [deleteTarget, setDeleteTarget] = React.useState<WorkerRow | null>(null)
+  const [deleting, setDeleting] = React.useState(false)
 
   const [toast, setToast] = React.useState<{
     type: 'success' | 'error'
@@ -278,6 +291,39 @@ export default function WorkersPage() {
     }
   }
 
+  async function handleConfirmDelete() {
+    if (!deleteTarget) return
+
+    try {
+      setDeleting(true)
+      await deleteWorker(deleteTarget.id)
+      pushToast('success', language === 'uz' ? "Xodim o'chirildi" : 'Worker deleted')
+      setDeleteTarget(null)
+
+      if (selectedRow?.id === deleteTarget.id) {
+        setSelectedRow(null)
+        setSelectedDetails(null)
+        setSelectedPayments([])
+        setDetailsOpen(false)
+        setPayOpen(false)
+        setEditWorkerOpen(false)
+      }
+
+      await loadWorkers()
+    } catch (requestError) {
+      pushToast(
+        'error',
+        requestError instanceof Error
+          ? requestError.message
+          : language === 'uz'
+            ? "Xodimni o'chirib bo'lmadi"
+            : 'Failed to delete worker',
+      )
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <WorkersPageHeader
@@ -309,6 +355,9 @@ export default function WorkersPage() {
         }}
         onView={(row) => {
           void openDetails(row)
+        }}
+        onDelete={(row) => {
+          setDeleteTarget(row)
         }}
       />
 
@@ -349,21 +398,68 @@ export default function WorkersPage() {
         onSave={handleEdit}
       />
 
-      {toast ? (
-        <div
-          className={`fixed right-5 top-5 z-[90] transition-all duration-300 ease-out ${
-            toastVisible ? 'translate-x-0 opacity-100' : 'translate-x-[120%] opacity-0'
-          }`}
-        >
-          <div
-            className={`rounded-xl px-4 py-3 text-sm text-white shadow-lg ${
-              toast.type === 'success' ? 'bg-emerald-600' : 'bg-rose-600'
-            }`}
-          >
-            {toast.message}
-          </div>
-        </div>
-      ) : null}
+      <Dialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(next) => {
+          if (!next && !deleting) {
+            setDeleteTarget(null)
+          }
+        }}
+      >
+        <DialogContent className="max-w-md rounded-3xl">
+          <DialogHeader>
+            <DialogTitle>{language === 'uz' ? "Xodimni o'chirish" : 'Delete worker'}</DialogTitle>
+            <DialogDescription>
+              {deleteTarget
+                ? language === 'uz'
+                  ? `Haqiqatan ham "${deleteTarget.fullName}" xodimini o'chirmoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi.`
+                  : `Are you sure you want to delete "${deleteTarget.fullName}"? This action cannot be undone.`
+                : language === 'uz'
+                  ? 'Ishonchingiz komilmi?'
+                  : 'Are you sure?'}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              className="rounded-2xl"
+              onClick={() => setDeleteTarget(null)}
+              disabled={deleting}
+            >
+              {language === 'uz' ? 'Bekor qilish' : 'Cancel'}
+            </Button>
+            <Button
+              variant="destructive"
+              className="rounded-2xl"
+              onClick={() => void handleConfirmDelete()}
+              disabled={deleting}
+            >
+              {deleting
+                ? language === 'uz'
+                  ? "O'chirilmoqda..."
+                  : 'Deleting...'
+                : language === 'uz'
+                  ? "O'chirish"
+                  : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {toast
+        ? createPortal(
+            <div
+              className={`fixed bottom-5 right-5 z-[9999] transition-all duration-300 ease-out ${
+                toastVisible ? 'translate-x-0 opacity-100' : 'translate-x-[120%] opacity-0'
+              }`}
+            >
+              <div className="rounded-xl border border-emerald-500 bg-white px-4 py-3 text-sm text-emerald-700 shadow-lg dark:bg-background">
+                {toast.message}
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   )
 }

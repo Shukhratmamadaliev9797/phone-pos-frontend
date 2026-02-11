@@ -43,11 +43,36 @@ export function CustomerDetailsModal({
   const debt = customer?.debt ?? row.debt;
   const credit = customer?.credit ?? row.credit;
   const totalDue = customer?.totalDue ?? row.totalDue ?? debt + credit;
-  const soldPhones = customer?.soldPhones ?? row.soldPhones;
-  const purchasedPhones = customer?.purchasedPhones ?? row.purchasedPhones;
   const activities = customer?.activities ?? [];
   const targetSaleId = customer?.openSales?.[0]?.id;
   const targetPurchaseId = customer?.openPurchases?.[0]?.id;
+  const openSales = customer?.openSales ?? [];
+  const openPurchases = customer?.openPurchases ?? [];
+
+  const mapStatus = (status?: string) => {
+    if (!status) return "—";
+    if (language === "uz") {
+      if (status === "READY_FOR_SALE") return "Sotuvga tayyor";
+      if (status === "IN_REPAIR") return "Ta'mirda";
+      if (status === "SOLD") return "Sotilgan";
+      if (status === "IN_STOCK") return "Omborda";
+      return status;
+    }
+    if (status === "READY_FOR_SALE") return "Ready for sale";
+    if (status === "IN_REPAIR") return "In repair";
+    if (status === "IN_STOCK") return "In stock";
+    return status;
+  };
+
+  const mapCondition = (condition?: string) => {
+    if (!condition) return "—";
+    if (language === "uz") {
+      if (condition === "GOOD") return "Yaxshi";
+      if (condition === "USED") return "Ishlatilgan";
+      if (condition === "BROKEN") return "Nosoz";
+    }
+    return condition;
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -129,24 +154,101 @@ export function CustomerDetailsModal({
             <div className="text-sm font-medium">{details.notes || "—"}</div>
           </div>
 
-          <div className="rounded-2xl border bg-muted/10 p-4">
+          <div className="rounded-2xl border bg-muted/10 p-4 space-y-3">
             <div className="text-xs text-muted-foreground">
-              {language === "uz" ? "Telefon tafsilotlari" : "Phone details"}
+              {language === "uz" ? "To'lov ma'lumotlari" : "Payment summary"}
             </div>
-            <div className="mt-2 text-sm">
-              <div>
-                <span className="font-medium">
-                  {language === "uz" ? "Sotilgan:" : "Sold:"}
-                </span>{" "}
-                {soldPhones || "—"}
+
+            {openSales.map((sale) => (
+              <div key={`sale-${sale.id}`} className="rounded-xl border bg-background p-3">
+                <div className="mt-1 grid gap-2 text-sm sm:grid-cols-3">
+                  <div>
+                    <span className="text-muted-foreground">{language === "uz" ? "Jami" : "Total"}: </span>
+                    <span className="font-medium">{money(Number(sale.total ?? 0))}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">{language === "uz" ? "To'langan" : "Paid"}: </span>
+                    <span className="font-medium">{money(Number(sale.paid ?? 0))}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">{language === "uz" ? "Qolgan" : "Remaining"}: </span>
+                    <span className="font-medium">{money(Number(sale.remaining ?? 0))}</span>
+                  </div>
+                </div>
               </div>
-              <div>
-                <span className="font-medium">
-                  {language === "uz" ? "Sotib olingan:" : "Bought:"}
-                </span>{" "}
-                {purchasedPhones || "—"}
+            ))}
+
+            {openPurchases.map((purchase) => (
+              <div
+                key={`purchase-${purchase.id}`}
+                className="rounded-xl border bg-background p-3"
+              >
+                <div className="mt-1 grid gap-2 text-sm sm:grid-cols-3">
+                  <div>
+                    <span className="text-muted-foreground">{language === "uz" ? "Jami" : "Total"}: </span>
+                    <span className="font-medium">{money(Number(purchase.total ?? 0))}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">{language === "uz" ? "To'langan" : "Paid"}: </span>
+                    <span className="font-medium">{money(Number(purchase.paid ?? 0))}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">{language === "uz" ? "Qolgan" : "Remaining"}: </span>
+                    <span className="font-medium">{money(Number(purchase.remaining ?? 0))}</span>
+                  </div>
+                </div>
               </div>
+            ))}
+          </div>
+
+          <div className="rounded-2xl border bg-muted/10 p-4 space-y-3">
+            <div className="text-xs text-muted-foreground">
+              {language === "uz" ? "Telefonlarning to'liq tafsilotlari" : "Full phone details"}
             </div>
+
+            {openSales.map((sale) =>
+              (sale.phones ?? []).map((phone, index) => (
+                <div
+                  key={`sale-phone-${sale.id}-${phone.imei}-${index}`}
+                  className="rounded-xl border bg-background p-3 text-sm"
+                >
+                  <div className="font-semibold">
+                    {phone.brand} {phone.model}
+                  </div>
+                  <div className="mt-1 grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
+                    <div>IMEI: {phone.imei}</div>
+                    <div>{language === "uz" ? "Xotira" : "Storage"}: {phone.storage || "—"}</div>
+                    <div>{language === "uz" ? "Holati" : "Condition"}: {mapCondition(phone.condition)}</div>
+                    <div>{language === "uz" ? "Status" : "Status"}: {mapStatus(phone.status)}</div>
+                  </div>
+                </div>
+              )),
+            )}
+
+            {openPurchases.map((purchase) =>
+              (purchase.phones ?? []).map((phone, index) => (
+                <div
+                  key={`purchase-phone-${purchase.id}-${phone.imei}-${index}`}
+                  className="rounded-xl border bg-background p-3 text-sm"
+                >
+                  <div className="font-semibold">
+                    {phone.brand} {phone.model}
+                  </div>
+                  <div className="mt-1 grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
+                    <div>IMEI: {phone.imei}</div>
+                    <div>{language === "uz" ? "Xotira" : "Storage"}: {phone.storage || "—"}</div>
+                    <div>{language === "uz" ? "Holati" : "Condition"}: {mapCondition(phone.condition)}</div>
+                    <div>{language === "uz" ? "Status" : "Status"}: {mapStatus(phone.status)}</div>
+                  </div>
+                </div>
+              )),
+            )}
+
+            {openSales.length === 0 && openPurchases.length === 0 ? (
+              <div className="text-sm text-muted-foreground">
+                {language === "uz" ? "Telefon tafsilotlari yo'q" : "No phone details"}
+              </div>
+            ) : null}
           </div>
 
           <div className="rounded-2xl border bg-muted/10 p-4">

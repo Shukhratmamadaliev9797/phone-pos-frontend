@@ -1,17 +1,8 @@
-import * as React from "react";
 import { cn } from "@/lib/utils";
 import { TrendingDown, TrendingUp, Phone } from "lucide-react";
 import type { DashboardOverview } from "@/lib/api/dashboard";
 import { useI18n } from "@/lib/i18n/provider";
-
-type KPI = {
-  title: string;
-  value: string;
-  deltaPercent: number; // e.g. 10 => +10%, -12 => -12%
-  deltaLabel?: string; // e.g. "From Last Month"
-  variant?: "primary" | "default";
-  icon?: React.ElementType;
-};
+import type { KPI } from "../types";
 
 function Delta({
   value,
@@ -30,7 +21,7 @@ function Delta({
           "inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-medium",
           up
             ? "bg-emerald-500/10 text-emerald-700"
-            : "bg-rose-500/10 text-rose-700"
+            : "bg-rose-500/10 text-rose-700",
         )}
       >
         <Icon className="h-3.5 w-3.5" />
@@ -51,7 +42,7 @@ function KpiCard({ item }: { item: KPI }) {
       className={cn(
         "relative overflow-hidden rounded-3xl border border-muted/40 bg-muted/30 p-4 shadow-sm",
         isPrimary &&
-          "border-transparent text-white bg-gradient-to-br from-indigo-600 to-violet-500"
+          "border-transparent text-white bg-gradient-to-br from-indigo-600 to-violet-500",
       )}
     >
       {/* subtle glow */}
@@ -61,10 +52,20 @@ function KpiCard({ item }: { item: KPI }) {
 
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className={cn("text-xs", isPrimary ? "text-white/80" : "text-muted-foreground")}>
+          <div
+            className={cn(
+              "text-xs",
+              isPrimary ? "text-white/80" : "text-muted-foreground",
+            )}
+          >
             {item.title}
           </div>
-          <div className={cn("mt-2 text-2xl font-semibold tracking-tight", isPrimary && "text-white")}>
+          <div
+            className={cn(
+              "mt-2 text-2xl font-semibold tracking-tight",
+              isPrimary && "text-white",
+            )}
+          >
             {item.value}
           </div>
         </div>
@@ -72,14 +73,24 @@ function KpiCard({ item }: { item: KPI }) {
         <div
           className={cn(
             "inline-flex h-9 w-9 items-center justify-center rounded-xl",
-            isPrimary ? "bg-white/15" : "bg-muted/40"
+            isPrimary ? "bg-white/15" : "bg-muted/40",
           )}
           aria-hidden="true"
         >
           {Icon ? (
-            <Icon className={cn("h-5 w-5", isPrimary ? "text-white" : "text-foreground")} />
+            <Icon
+              className={cn(
+                "h-5 w-5",
+                isPrimary ? "text-white" : "text-foreground",
+              )}
+            />
           ) : (
-            <span className={cn("text-sm font-semibold", isPrimary ? "text-white" : "text-foreground")}>
+            <span
+              className={cn(
+                "text-sm font-semibold",
+                isPrimary ? "text-white" : "text-foreground",
+              )}
+            >
               ↗
             </span>
           )}
@@ -93,11 +104,7 @@ function KpiCard({ item }: { item: KPI }) {
   );
 }
 
-export function DashboardKpiRow({
-  kpis,
-}: {
-  kpis: DashboardOverview["kpis"];
-}) {
+export function DashboardKpiRow({ kpis }: { kpis: DashboardOverview["kpis"] }) {
   const { language } = useI18n();
   const fromLastMonth = language === "uz" ? "O'tgan oydan" : "From Last Month";
   const items: KPI[] = [

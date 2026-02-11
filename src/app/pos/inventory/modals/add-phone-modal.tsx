@@ -17,6 +17,11 @@ import type {
   InventoryStatus,
 } from "@/lib/api/inventory";
 import { useI18n } from "@/lib/i18n/provider";
+import {
+  getPhoneModelsByBrand,
+  PHONE_BRAND_OPTIONS,
+  PHONE_STORAGE_OPTIONS,
+} from "@/lib/constants/phone-options";
 
 type FormValue = {
   imei: string;
@@ -35,7 +40,7 @@ const INITIAL_FORM: FormValue = {
   model: "",
   storage: "",
   condition: "USED",
-  status: "IN_STOCK",
+  status: "READY_FOR_SALE",
   knownIssues: "",
   expectedSalePrice: "",
 };
@@ -55,6 +60,10 @@ export function AddPhoneModal({
   const [value, setValue] = React.useState<FormValue>(INITIAL_FORM);
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const modelOptions = React.useMemo(
+    () => getPhoneModelsByBrand(value.brand),
+    [value.brand],
+  );
 
   React.useEffect(() => {
     if (open) {
@@ -120,34 +129,85 @@ export function AddPhoneModal({
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label>IMEI</Label>
-            <Input
-              value={value.imei}
-              onChange={(e) => setValue((p) => ({ ...p, imei: e.target.value }))}
-            />
+            <Label>{language === "uz" ? "Brend" : "Brand"}</Label>
+            <Select
+              value={value.brand || undefined}
+              onValueChange={(selected) =>
+                setValue((p) => ({ ...p, brand: selected, model: "" }))
+              }
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue
+                  placeholder={
+                    language === "uz" ? "Brendni tanlang" : "Select brand"
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent className="w-[--radix-select-trigger-width]">
+                {PHONE_BRAND_OPTIONS.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
-            <Label>{language === "uz" ? "Brend" : "Brand"}</Label>
-            <Input
-              value={value.brand}
-              onChange={(e) => setValue((p) => ({ ...p, brand: e.target.value }))}
-            />
-          </div>
-          <div className="space-y-2">
             <Label>{language === "uz" ? "Model" : "Model"}</Label>
-            <Input
-              value={value.model}
-              onChange={(e) => setValue((p) => ({ ...p, model: e.target.value }))}
-            />
+            <Select
+              value={value.model || undefined}
+              onValueChange={(selected) =>
+                setValue((p) => ({ ...p, model: selected }))
+              }
+              disabled={!value.brand}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue
+                  placeholder={
+                    !value.brand
+                      ? language === "uz"
+                        ? "Avval brendni tanlang"
+                        : "Select brand first"
+                      : language === "uz"
+                        ? "Modelni tanlang"
+                        : "Select model"
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent className="w-[--radix-select-trigger-width]">
+                {modelOptions.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
             <Label>{language === "uz" ? "Xotira" : "Storage"}</Label>
-            <Input
+            <Select
               value={value.storage}
-              onChange={(e) => setValue((p) => ({ ...p, storage: e.target.value }))}
-            />
+              onValueChange={(selected) =>
+                setValue((p) => ({ ...p, storage: selected }))
+              }
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue
+                  placeholder={
+                    language === "uz" ? "Xotirani tanlang" : "Select storage"
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent className="w-[--radix-select-trigger-width]">
+                {PHONE_STORAGE_OPTIONS.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
@@ -158,15 +218,23 @@ export function AddPhoneModal({
                 setValue((p) => ({ ...p, condition: v as InventoryCondition }))
               }
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="w-[--radix-select-trigger-width]">
                 <SelectItem value="GOOD">{language === "uz" ? "Yaxshi" : "Good"}</SelectItem>
                 <SelectItem value="USED">{language === "uz" ? "Ishlatilgan" : "Used"}</SelectItem>
                 <SelectItem value="BROKEN">{language === "uz" ? "Nosoz" : "Broken"}</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>IMEI</Label>
+            <Input
+              value={value.imei}
+              onChange={(e) => setValue((p) => ({ ...p, imei: e.target.value }))}
+            />
           </div>
 
           <div className="space-y-2">
@@ -177,11 +245,10 @@ export function AddPhoneModal({
                 setValue((p) => ({ ...p, status: v as InventoryStatus }))
               }
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="IN_STOCK">{language === "uz" ? "Omborda" : "In Stock"}</SelectItem>
+              <SelectContent className="w-[--radix-select-trigger-width]">
                 <SelectItem value="IN_REPAIR">{language === "uz" ? "Ta'mirda" : "In Repair"}</SelectItem>
                 <SelectItem value="READY_FOR_SALE">
                   {language === "uz" ? "Sotuvga tayyor" : "Ready for Sale"}
@@ -191,10 +258,10 @@ export function AddPhoneModal({
           </div>
 
           <div className="space-y-2 sm:col-span-2">
-            <Label>{language === "uz" ? "Sotuv narxi" : "Sale Price"}</Label>
+            <Label>{language === "uz" ? "Narx" : "Price"}</Label>
             <Input
               inputMode="decimal"
-              placeholder={language === "uz" ? "masalan: 6500000" : "e.g. 6500000"}
+              placeholder={language === "uz" ? "masalan: 6 500 000 so'm" : "e.g. 6,500,000 so'm"}
               value={value.expectedSalePrice}
               onChange={(e) =>
                 setValue((p) => ({

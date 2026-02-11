@@ -10,6 +10,39 @@ import { AUTH } from "./path";
 
 const url = import.meta.env.VITE_BASE_URL;
 
+type RefreshPayload =
+  | {
+      auth?: {
+        access_token?: string;
+        refresh_token?: string;
+      };
+      tokens?: {
+        accessToken?: string;
+        refreshToken?: string;
+      };
+      access_token?: string;
+      refresh_token?: string;
+    }
+  | undefined;
+
+function extractTokens(payload: RefreshPayload): {
+  accessToken: string | null;
+  refreshToken: string | null;
+} {
+  const accessToken =
+    payload?.tokens?.accessToken ??
+    payload?.auth?.access_token ??
+    payload?.access_token ??
+    null;
+  const refreshToken =
+    payload?.tokens?.refreshToken ??
+    payload?.auth?.refresh_token ??
+    payload?.refresh_token ??
+    null;
+
+  return { accessToken, refreshToken };
+}
+
 // Oddiy baseQuery: har bir requestga token bo‘lsa Authorization header qo‘shish
 const baseQuery = fetchBaseQuery({
   baseUrl: `${url}`,
@@ -43,21 +76,22 @@ const baseQueryWithReauth: BaseQueryFn<
           url: AUTH.REFRESH,
           method: "POST",
           body: {
-            refresh_token: refreshToken,
+            refreshToken,
           },
         },
         api,
         extraOptions,
       );
 
-      const refreshData = refreshResult?.data as AuthResponse | undefined;
+      const refreshData = refreshResult?.data as RefreshPayload;
+      const nextTokens = extractTokens(refreshData);
 
       // 3) Agar yangi tokenlar kelsa — store'ni yangilaymiz
-      if (refreshData?.auth?.access_token && refreshData?.auth?.refresh_token) {
+      if (nextTokens.accessToken) {
         api.dispatch(
           updateTokens({
-            accessToken: refreshData.auth.access_token,
-            refreshToken: refreshData.auth.refresh_token,
+            accessToken: nextTokens.accessToken,
+            refreshToken: nextTokens.refreshToken ?? undefined,
           }),
         );
 

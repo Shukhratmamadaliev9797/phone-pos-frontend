@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useNavigate } from "react-router-dom";
 import { DashboardHeading } from "./components/dashboard-heading";
 import { DashboardKpiRow } from "./components/kpi-row";
 import { PaidVsUnpaidCard } from "./components/paid-vs-unpaid";
@@ -37,6 +38,7 @@ const EMPTY_OVERVIEW: DashboardOverview = {
 
 export default function DashboardPage() {
   const { language } = useI18n();
+  const navigate = useNavigate();
   const [overview, setOverview] = React.useState<DashboardOverview>(EMPTY_OVERVIEW);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -88,7 +90,11 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <PaidVsUnpaidCard paidVsUnpaid={overview.paidVsUnpaid} />
+        <PaidVsUnpaidCard
+          paidVsUnpaid={overview.paidVsUnpaid}
+          onViewDebts={() => navigate("/pos/customers?type=debt")}
+          onViewCredits={() => navigate("/pos/customers?type=credit")}
+        />
         <TopDebtCustomersCard rows={overview.topDebtCustomers} />
         <TopCreditCustomersCard rows={overview.topCreditCustomers} />
       </div>

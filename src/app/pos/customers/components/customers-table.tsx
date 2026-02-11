@@ -23,10 +23,9 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import type { CustomerBalanceRow } from "@/lib/api/customers";
-import { useI18n } from "@/lib/i18n/provider";
 
-export type CustomerRow = CustomerBalanceRow;
+import { useI18n } from "@/lib/i18n/provider";
+import type { CustomerRow } from "../types";
 
 function money(n: number) {
   return `${Math.max(0, Math.round(n)).toLocaleString("en-US")} so'm`;
@@ -168,7 +167,7 @@ export function CustomersTable({
                   {language === "uz" ? "Holat" : "Status"}
                 </TableHead>
                 <TableHead className="whitespace-nowrap py-2">
-                  {language === "uz" ? "Jami to'lov" : "Total due"}
+                  {language === "uz" ? "Jami narx" : "Total price"}
                 </TableHead>
                 <TableHead className="whitespace-nowrap py-2">
                   {language === "uz" ? "Oxirgi to'lov" : "Last payment"}
@@ -191,23 +190,13 @@ export function CustomersTable({
                     <div className="text-sm font-semibold">
                       {r.customer.fullName || "—"}
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      {r.customer.phoneNumber}
-                    </div>
                   </TableCell>
 
                   <TableCell className="min-w-[220px] py-2 text-xs text-muted-foreground">
-                    <div>
-                      <span className="font-medium text-foreground">
-                        {language === "uz" ? "Sotilgan:" : "Sold:"}
-                      </span>{" "}
-                      {r.soldPhones || "—"}
-                    </div>
-                    <div>
-                      <span className="font-medium text-foreground">
-                        {language === "uz" ? "Sotib olingan:" : "Bought:"}
-                      </span>{" "}
-                      {r.purchasedPhones || "—"}
+                    <div className="text-sm text-foreground">
+                      {r.soldPhones && r.purchasedPhones
+                        ? `${r.soldPhones}, ${r.purchasedPhones}`
+                        : r.soldPhones || r.purchasedPhones || "—"}
                     </div>
                   </TableCell>
 

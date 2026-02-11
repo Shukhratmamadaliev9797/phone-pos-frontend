@@ -85,11 +85,8 @@ export function InventoryFilters({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">{tr.all}</SelectItem>
-                <SelectItem value="IN_STOCK">{tr.inStock}</SelectItem>
                 <SelectItem value="IN_REPAIR">{tr.inRepair}</SelectItem>
                 <SelectItem value="READY_FOR_SALE">{tr.readyForSale}</SelectItem>
-                <SelectItem value="SOLD">{tr.sold}</SelectItem>
-                <SelectItem value="RETURNED">{tr.returned}</SelectItem>
               </SelectContent>
             </Select>
           </div>

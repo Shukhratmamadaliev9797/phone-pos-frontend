@@ -1,4 +1,9 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -42,7 +47,10 @@ function statusPill(status: "PAID" | "PARTIAL" | "UNPAID") {
   return "bg-rose-500/15 text-rose-700";
 }
 
-function computeStatus(total: number, remaining: number): "PAID" | "PARTIAL" | "UNPAID" {
+function computeStatus(
+  total: number,
+  remaining: number,
+): "PAID" | "PARTIAL" | "UNPAID" {
   if (remaining <= 0) return "PAID";
   if (remaining >= total) return "UNPAID";
   return "PARTIAL";
@@ -164,7 +172,7 @@ export function SaleDetailsModal({
                     {language === "uz" ? "Sotuv tafsilotlari" : "Sale details"}
                   </DialogTitle>
                   <p className="mt-1 text-sm text-muted-foreground">
-                {sale.id} • {formatDateTime(sale.soldAt)}
+                    {formatDateTime(sale.soldAt)}
                   </p>
                 </div>
               </div>
@@ -218,7 +226,9 @@ export function SaleDetailsModal({
                   <div className="text-xs text-muted-foreground">
                     {language === "uz" ? "Qolgan (Qarz)" : "Remaining (Debt)"}
                   </div>
-                  <div className="text-sm font-semibold">{money(remaining)}</div>
+                  <div className="text-sm font-semibold">
+                    {money(remaining)}
+                  </div>
                 </div>
               </div>
             </div>
@@ -230,15 +240,21 @@ export function SaleDetailsModal({
                 <div className="text-sm font-semibold">
                   {language === "uz" ? "Mijoz" : "Customer"}
                 </div>
-                <div className="mt-2 text-sm">{sale.customer?.fullName || ""}</div>
-                <div className="text-sm text-muted-foreground">{sale.customer?.phoneNumber || "—"}</div>
+                <div className="mt-2 text-sm">
+                  {sale.customer?.fullName || ""}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {sale.customer?.phoneNumber || "—"}
+                </div>
               </div>
 
               <div className="rounded-3xl border p-4">
                 <div className="text-sm font-semibold">
                   {language === "uz" ? "Izohlar" : "Notes"}
                 </div>
-                <div className="mt-2 text-sm text-muted-foreground">{sale.notes || "—"}</div>
+                <div className="mt-2 text-sm text-muted-foreground">
+                  {sale.notes || "—"}
+                </div>
               </div>
             </div>
 
@@ -250,15 +266,20 @@ export function SaleDetailsModal({
               </div>
               <div className="mt-2 space-y-2">
                 {sale.items.map((item) => (
-                  <div key={item.id} className="rounded-xl border bg-muted/10 p-3">
+                  <div
+                    key={item.id}
+                    className="rounded-xl border bg-muted/10 p-3"
+                  >
                     <p className="text-sm font-medium">
                       {item.item.brand} {item.item.model}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      IMEI: {item.item.imei} • {item.item.condition} • {item.item.status}
+                      IMEI: {item.item.imei} • {item.item.condition} •{" "}
+                      {item.item.status}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {language === "uz" ? "Sotuv narxi" : "Sale price"}: {money(Number(item.salePrice))}
+                      {language === "uz" ? "Sotuv narxi" : "Sale price"}:{" "}
+                      {money(Number(item.salePrice))}
                     </p>
                   </div>
                 ))}
@@ -267,7 +288,9 @@ export function SaleDetailsModal({
 
             <div className="rounded-3xl border p-4">
               <div className="text-sm font-semibold">
-                {language === "uz" ? "To'lov faoliyatlari" : "Payment activities"}
+                {language === "uz"
+                  ? "To'lov faoliyatlari"
+                  : "Payment activities"}
               </div>
               <div className="mt-2 space-y-2">
                 {(sale.activities ?? []).length === 0 ? (
@@ -278,7 +301,10 @@ export function SaleDetailsModal({
                   </div>
                 ) : (
                   sale.activities.map((activity) => (
-                    <div key={activity.id} className="rounded-xl border bg-muted/10 p-3">
+                    <div
+                      key={activity.id}
+                      className="rounded-xl border bg-muted/10 p-3"
+                    >
                       <p className="text-sm font-medium">
                         {money(Number(activity.amount))}
                       </p>
@@ -286,7 +312,9 @@ export function SaleDetailsModal({
                         {formatDateOnly(activity.paidAt)}
                       </p>
                       {activity.notes ? (
-                        <p className="text-xs text-muted-foreground">{activity.notes}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {activity.notes}
+                        </p>
                       ) : null}
                     </div>
                   ))
@@ -297,7 +325,11 @@ export function SaleDetailsModal({
 
           <div className="border-t p-4">
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <Button variant="outline" className="rounded-2xl" onClick={downloadReceiptPdf}>
+              <Button
+                variant="outline"
+                className="rounded-2xl"
+                onClick={downloadReceiptPdf}
+              >
                 <Printer className="mr-2 h-4 w-4" />
                 {language === "uz" ? "Chek (PDF)" : "Receipt (PDF)"}
               </Button>

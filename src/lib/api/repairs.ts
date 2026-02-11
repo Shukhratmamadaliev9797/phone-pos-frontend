@@ -52,7 +52,12 @@ export type RepairListItem = {
     imei?: string
     brand?: string
     model?: string
+    storage?: string | null
+    color?: string | null
+    serialNumber?: string | null
+    condition?: 'GOOD' | 'USED' | 'BROKEN'
     status?: string
+    knownIssues?: string | null
   } | null
   itemId?: number
 }
@@ -180,6 +185,10 @@ export async function updateRepairEntry(
   body: UpdateRepairEntryPayload,
 ): Promise<RepairDetail> {
   return request(() => api.patch(`/api/repairs/entries/${entryId}`, body))
+}
+
+export async function deleteRepairEntry(entryId: number): Promise<RepairDetail> {
+  return request(() => api.delete(`/api/repairs/entries/${entryId}`))
 }
 
 export async function listRepairableInventory(params?: {

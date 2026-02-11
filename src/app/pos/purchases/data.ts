@@ -9,7 +9,7 @@ export function emptyPhone(): PhoneItemDraft {
     imei: "",
     condition: "USED",
     issues: "",
-    initialStatus: "IN_STOCK",
+    initialStatus: "READY_FOR_SALE",
     purchasePrice: 0,
   };
 }

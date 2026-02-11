@@ -75,6 +75,10 @@ export function AddPaymentModal({
   }
 
   if (!sale) return null;
+  const firstItem = sale.items?.[0]?.item;
+  const phoneTitle = firstItem
+    ? `${firstItem.brand} ${firstItem.model}`
+    : `Sale #${sale.id}`;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -82,8 +86,8 @@ export function AddPaymentModal({
         <DialogHeader>
           <DialogTitle>
             {language === "uz"
-              ? `Sotuv #${sale.id} uchun to'lov qo'shish`
-              : `Add payment for Sale #${sale.id}`}
+              ? `${phoneTitle} uchun to'lov qo'shish`
+              : `Add payment for ${phoneTitle}`}
           </DialogTitle>
         </DialogHeader>
 

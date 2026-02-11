@@ -18,18 +18,13 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { DashboardOverview } from "@/lib/api/dashboard";
 import { useI18n } from "@/lib/i18n/provider";
-
-type Row = {
-  phone: string;
-  amount: number;
-  status: "Paid" | "Debt";
-};
+import type { Row2 } from "../types";
 
 function money(value: number) {
   return `${Math.round(value).toLocaleString("en-US")} so'm`;
 }
 
-function StatusBadge({ status }: { status: Row["status"] }) {
+function StatusBadge({ status }: { status: Row2["status"] }) {
   const { language } = useI18n();
   const isPaid = status === "Paid";
   const label =
@@ -46,7 +41,7 @@ function StatusBadge({ status }: { status: Row["status"] }) {
         "rounded-full border px-2.5 py-0.5 text-xs font-semibold",
         isPaid
           ? "bg-emerald-500/10 text-emerald-700 border-emerald-200"
-          : "bg-rose-500/10 text-rose-700 border-rose-200"
+          : "bg-rose-500/10 text-rose-700 border-rose-200",
       )}
       variant="secondary"
     >
@@ -69,7 +64,9 @@ export function RecentSalesCard({
             {language === "uz" ? "So'nggi sotuvlar" : "Recent Sales"}
           </CardTitle>
           <CardDescription className="text-xs">
-            {language === "uz" ? "Oxirgi 10 ta telefon sotuvi" : "Last 10 phone sales"}
+            {language === "uz"
+              ? "Oxirgi 10 ta telefon sotuvi"
+              : "Last 10 phone sales"}
           </CardDescription>
         </div>
 
@@ -86,8 +83,12 @@ export function RecentSalesCard({
           <TableHeader>
             <TableRow>
               <TableHead>{language === "uz" ? "Telefon" : "Phone"}</TableHead>
-              <TableHead className="text-right">{language === "uz" ? "Summa" : "Amount"}</TableHead>
-              <TableHead className="text-right">{language === "uz" ? "Holat" : "Status"}</TableHead>
+              <TableHead className="text-right">
+                {language === "uz" ? "Summa" : "Amount"}
+              </TableHead>
+              <TableHead className="text-right">
+                {language === "uz" ? "Holat" : "Status"}
+              </TableHead>
             </TableRow>
           </TableHeader>
 
@@ -95,16 +96,20 @@ export function RecentSalesCard({
             {rows.map((row, i) => (
               <TableRow key={row.phone + i}>
                 <TableCell className="font-medium">{row.phone}</TableCell>
-                <TableCell className="text-right">{money(row.amount)}</TableCell>
                 <TableCell className="text-right">
-                  <StatusBadge status={row.status as Row["status"]} />
+                  {money(row.amount)}
+                </TableCell>
+                <TableCell className="text-right">
+                  <StatusBadge status={row.status as Row2["status"]} />
                 </TableCell>
               </TableRow>
             ))}
             {rows.length === 0 ? (
               <TableRow>
                 <TableCell className="text-muted-foreground" colSpan={3}>
-                  {language === "uz" ? "So'nggi sotuvlar yo'q" : "No recent sales"}
+                  {language === "uz"
+                    ? "So'nggi sotuvlar yo'q"
+                    : "No recent sales"}
                 </TableCell>
               </TableRow>
             ) : null}

@@ -7,18 +7,11 @@ import {
   Wallet,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n/provider";
+import type { Summary } from "../types";
 
 function money(n: number) {
   return `${Math.max(0, Math.round(n)).toLocaleString("en-US")} so'm`;
 }
-
-type Summary = {
-  totalCustomers: number;
-  customersWithDebt: number;
-  customersWithCredit: number;
-  totalDebt: number;
-  totalCredit: number;
-};
 
 export function CustomersSummaryRow({
   summary,
@@ -70,7 +63,10 @@ export function CustomersSummaryRow({
   return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
       {items.map((it) => (
-        <Card key={it.label} className="rounded-3xl border-muted/40 bg-muted/30">
+        <Card
+          key={it.label}
+          className="rounded-3xl border-muted/40 bg-muted/30"
+        >
           <CardContent className="p-4">
             <div className="flex items-start justify-between gap-3">
               <div>

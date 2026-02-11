@@ -22,6 +22,40 @@ interface AuthState {
   refreshToken: string | null
 }
 
+function persistAuthToStorage(payload: {
+  accessToken: string
+  refreshToken?: string
+  user: AuthUser
+}) {
+  localStorage.setItem('access_token', payload.accessToken)
+  if (payload.refreshToken) {
+    localStorage.setItem('refresh_token', payload.refreshToken)
+  } else {
+    localStorage.removeItem('refresh_token')
+  }
+  localStorage.setItem('user', JSON.stringify(payload.user))
+}
+
+function persistTokensToStorage(payload: {
+  accessToken: string
+  refreshToken?: string
+}) {
+  localStorage.setItem('access_token', payload.accessToken)
+  if (payload.refreshToken !== undefined) {
+    if (payload.refreshToken) {
+      localStorage.setItem('refresh_token', payload.refreshToken)
+    } else {
+      localStorage.removeItem('refresh_token')
+    }
+  }
+}
+
+function clearAuthFromStorage() {
+  localStorage.removeItem('access_token')
+  localStorage.removeItem('refresh_token')
+  localStorage.removeItem('user')
+}
+
 function readStoredUser(): AuthUser | null {
   try {
     const raw = localStorage.getItem('user')
@@ -59,6 +93,7 @@ const authSlice = createSlice({
       state.accessToken = action.payload.accessToken
       state.refreshToken = action.payload.refreshToken ?? null
       state.isAuthenticated = true
+      persistAuthToStorage(action.payload)
     },
     updateTokens: (
       state,
@@ -71,12 +106,14 @@ const authSlice = createSlice({
       if (action.payload.refreshToken !== undefined) {
         state.refreshToken = action.payload.refreshToken
       }
+      persistTokensToStorage(action.payload)
     },
     clearAuth: (state) => {
       state.isAuthenticated = false
       state.user = null
       state.accessToken = null
       state.refreshToken = null
+      clearAuthFromStorage()
     },
   },
 })

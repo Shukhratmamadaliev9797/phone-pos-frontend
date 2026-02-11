@@ -31,6 +31,15 @@ export type CustomerActivity = {
   notes?: string | null
 }
 
+export type CustomerTransactionPhone = {
+  brand: string
+  model: string
+  imei: string
+  storage?: string | null
+  condition: string
+  status: string
+}
+
 export type CustomerDetail = {
   customer: CustomerView
   debt: number
@@ -44,13 +53,21 @@ export type CustomerDetail = {
   activities: CustomerActivity[]
   openSales: Array<{
     id: number
+    total?: number
+    paid?: number
     remaining: number
+    paymentType?: string
     soldAt: string
+    phones?: CustomerTransactionPhone[]
   }>
   openPurchases: Array<{
     id: number
+    total?: number
+    paid?: number
     remaining: number
+    paymentType?: string
     purchasedAt: string
+    phones?: CustomerTransactionPhone[]
   }>
 }
 

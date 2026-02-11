@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { CustomersPageHeader } from "./components/customers-header";
 import { CustomersFilters } from "./components/customers-filters";
 import { CustomersSummaryRow } from "./components/customers-summary";
@@ -44,35 +44,72 @@ const PAGE_LIMIT = 10;
 
 export default function CustomersPage() {
   const { language } = useI18n();
+  const [searchParams, setSearchParams] = useSearchParams();
   const role = useAppSelector((state) => state.auth.user?.role);
   const canView = canViewCustomers(role);
   const canManage = canManageCustomers(role);
-  const canManageTransactions = canManageSales(role) || canManagePurchases(role);
+  const canManageTransactions =
+    canManageSales(role) || canManagePurchases(role);
 
   const [rows, setRows] = React.useState<CustomerBalanceRow[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
-  const [page, setPage] = React.useState(1);
+  const initialPageParam = Number(searchParams.get("page") ?? "1");
+  const initialPage = Number.isFinite(initialPageParam) && initialPageParam > 0 ? initialPageParam : 1;
+  const [page, setPage] = React.useState(initialPage);
   const [total, setTotal] = React.useState(0);
   const [totalPages, setTotalPages] = React.useState(1);
-  const [search, setSearch] = React.useState("");
+  const [search, setSearch] = React.useState(searchParams.get("search") ?? "");
   const [searchDebounced, setSearchDebounced] = React.useState("");
-  const [type, setType] = React.useState<CustomerBalanceType>("all");
+  const initialTypeParam = searchParams.get("type");
+  const initialType: CustomerBalanceType =
+    initialTypeParam === "debt" || initialTypeParam === "credit" || initialTypeParam === "all"
+      ? initialTypeParam
+      : "all";
+  const [type, setType] = React.useState<CustomerBalanceType>(initialType);
 
   const [detailsOpen, setDetailsOpen] = React.useState(false);
-  const [selectedRow, setSelectedRow] = React.useState<CustomerBalanceRow | null>(null);
-  const [selectedCustomer, setSelectedCustomer] = React.useState<CustomerDetail | null>(null);
+  const [selectedRow, setSelectedRow] =
+    React.useState<CustomerBalanceRow | null>(null);
+  const [selectedCustomer, setSelectedCustomer] =
+    React.useState<CustomerDetail | null>(null);
   const [salePaymentOpen, setSalePaymentOpen] = React.useState(false);
   const [saleEditOpen, setSaleEditOpen] = React.useState(false);
   const [purchasePaymentOpen, setPurchasePaymentOpen] = React.useState(false);
   const [purchaseEditOpen, setPurchaseEditOpen] = React.useState(false);
-  const [selectedSale, setSelectedSale] = React.useState<SaleDetail | null>(null);
-  const [selectedPurchase, setSelectedPurchase] = React.useState<PurchaseDetail | null>(null);
+  const [selectedSale, setSelectedSale] = React.useState<SaleDetail | null>(
+    null,
+  );
+  const [selectedPurchase, setSelectedPurchase] =
+    React.useState<PurchaseDetail | null>(null);
 
   React.useEffect(() => {
     const timer = window.setTimeout(() => setSearchDebounced(search), 300);
     return () => window.clearTimeout(timer);
   }, [search]);
+
+  React.useEffect(() => {
+    const next = new URLSearchParams();
+    if (page > 1) {
+      next.set("page", String(page));
+    } else {
+      next.delete("page");
+    }
+
+    if (type !== "all") {
+      next.set("type", type);
+    } else {
+      next.delete("type");
+    }
+
+    if (search.trim()) {
+      next.set("search", search.trim());
+    } else {
+      next.delete("search");
+    }
+
+    setSearchParams(next, { replace: true });
+  }, [page, type, search, setSearchParams]);
 
   const load = React.useCallback(async () => {
     if (!canView) return;
@@ -92,7 +129,10 @@ export default function CustomersPage() {
       setTotal(response.meta.total);
       setTotalPages(response.meta.totalPages);
     } catch (requestError) {
-      if (requestError instanceof ApiRequestError && requestError.status === 401) {
+      if (
+        requestError instanceof ApiRequestError &&
+        requestError.status === 401
+      ) {
         setError(
           language === "uz"
             ? "Sessiya tugadi. Qayta tizimga kiring."

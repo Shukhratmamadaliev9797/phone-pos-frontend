@@ -35,6 +35,11 @@ function methodIcon(method: PurchaseDetail['paymentMethod']) {
   return CircleDollarSign
 }
 
+function paymentTypeLabel(type: PurchaseDetail['paymentType'], language: 'en' | 'uz') {
+  if (type === 'PAID_NOW') return language === 'uz' ? "To'liq to'lov" : 'Full payment'
+  return language === 'uz' ? "Bo'lib to'lash" : 'Pay later'
+}
+
 function isRepairedNote(note?: string | null) {
   return note?.toLowerCase().includes('repaired') ?? false
 }
@@ -100,12 +105,18 @@ export function PurchaseDetailsModal({
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="space-y-1">
                 <div className="text-sm text-muted-foreground">
-                  {language === 'uz' ? 'Xarid ID' : 'Purchase ID'}
+                  {language === 'uz' ? 'Telefon' : 'Phone'}
                 </div>
-                <div className="text-lg font-semibold">#{purchase.id}</div>
-                <div className="text-xs text-muted-foreground">
-                  {new Date(purchase.purchasedAt).toLocaleString()}
+                <div className="text-lg font-semibold">
+                  {purchase.items?.length
+                    ? `${purchase.items[0].item.brand} ${purchase.items[0].item.model}`
+                    : '—'}
                 </div>
+                {purchase.items.length > 1 ? (
+                  <div className="text-xs text-muted-foreground">
+                    +{purchase.items.length - 1} {language === 'uz' ? 'ta telefon' : 'more item(s)'}
+                  </div>
+                ) : null}
               </div>
 
               <div className="flex items-center gap-2 rounded-2xl border bg-muted/10 px-3 py-2">
@@ -115,6 +126,60 @@ export function PurchaseDetailsModal({
                 </div>
               </div>
             </div>
+
+            {(() => {
+              const firstItem = purchase.items?.[0]?.item
+              return (
+                <>
+                  <div className="rounded-3xl border bg-muted/10 p-4">
+                    <div className="text-sm font-semibold">
+                      {language === 'uz' ? 'Details' : 'Details'}
+                    </div>
+                    <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-muted-foreground">Storage</span>
+                        <span className="font-medium">{firstItem?.storage ?? '—'}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-muted-foreground">
+                          {language === 'uz' ? 'Condition' : 'Condition'}
+                        </span>
+                        <span className="font-medium">{firstItem?.condition ?? '—'}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-muted-foreground">IMEI</span>
+                        <span className="font-medium">{firstItem?.imei ?? '—'}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-muted-foreground">
+                          {language === 'uz' ? 'Status' : 'Status'}
+                        </span>
+                        <Badge
+                          variant="secondary"
+                          className={cn(
+                            'rounded-full border px-2 py-0 text-[10px] font-semibold',
+                            statusBadgeClass(firstItem?.status ?? ''),
+                          )}
+                        >
+                          {statusLabel(firstItem?.status ?? '', language)}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+
+                  {firstItem?.knownIssues ? (
+                    <div className="rounded-3xl border bg-muted/10 p-4">
+                      <div className="text-sm font-semibold">
+                        {language === 'uz' ? "Ma'lum nosozlik" : 'Known issue'}
+                      </div>
+                      <div className="mt-2 text-sm break-words whitespace-pre-wrap">
+                        {firstItem.knownIssues}
+                      </div>
+                    </div>
+                  ) : null}
+                </>
+              )
+            })()}
 
             <Separator />
 
@@ -166,24 +231,20 @@ export function PurchaseDetailsModal({
                     <span className="text-muted-foreground">
                       {language === 'uz' ? 'Turi' : 'Type'}
                     </span>
-                    <span className="font-medium">{purchase.paymentType}</span>
+                    <span className="font-medium">
+                      {paymentTypeLabel(purchase.paymentType, language)}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">{language === 'uz' ? 'Jami' : 'Total'}</span>
                     <span className="font-semibold">{money(purchase.totalPrice)}</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">
-                      {language === 'uz' ? "Hozir to'langan" : 'Paid now'}
-                    </span>
-                    <span className="font-medium">{money(purchase.paidNow)}</span>
-                  </div>
-                  {Number(purchase.remaining) > 0 ? (
+                  {purchase.paymentType === 'PAY_LATER' ? (
                     <div className="flex items-center justify-between">
                       <span className="text-muted-foreground">
-                        {language === 'uz' ? 'Qolgan' : 'Remaining'}
+                        {language === 'uz' ? "To'langan" : 'Paid'}
                       </span>
-                      <span className="font-medium">{money(purchase.remaining)}</span>
+                      <span className="font-medium">{money(purchase.paidNow)}</span>
                     </div>
                   ) : null}
                   {repairedTotal > 0 ? (
@@ -198,57 +259,16 @@ export function PurchaseDetailsModal({
               </div>
             </div>
 
-            <div className="rounded-3xl border bg-muted/10 p-4">
-              <div className="text-sm font-semibold">
-                {language === 'uz' ? "To'lov izohi" : 'Payment note'}
-              </div>
-              <div className="mt-2 text-sm font-medium break-words whitespace-pre-wrap">
-                {purchase.notes ?? '—'}
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div className="text-sm font-semibold">
-                {language === 'uz' ? 'Telefonlar' : 'Items'} ({purchase.items.length})
-              </div>
-
-              <div className="rounded-3xl border overflow-hidden">
-                <div className="divide-y">
-                  {purchase.items.map((entry) => (
-                    <div
-                      key={entry.id}
-                      className="flex flex-col gap-1 p-4 sm:flex-row sm:items-center sm:justify-between"
-                    >
-                      <div className="min-w-0">
-                        <div className="text-sm font-medium">
-                          {entry.item.brand} {entry.item.model}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          IMEI: {entry.item.imei} • {language === 'uz' ? 'Holati' : 'Condition'}:{' '}
-                          {entry.item.condition} • {language === 'uz' ? 'Holat' : 'Status'}:{' '}
-                          <Badge
-                            variant="secondary"
-                            className={cn(
-                              'ml-1 rounded-full border px-2 py-0 text-[10px] font-semibold',
-                              statusBadgeClass(entry.item.status),
-                            )}
-                          >
-                            {statusLabel(entry.item.status, language)}
-                          </Badge>
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {language === 'uz' ? "Ma'lum nosozlik" : 'Known issue'}:{' '}
-                          {entry.item.knownIssues ?? '—'}
-                        </div>
-                      </div>
-                      <div className="text-sm font-semibold">
-                        {money(entry.purchasePrice)}
-                      </div>
-                    </div>
-                  ))}
+            {purchase.notes ? (
+              <div className="rounded-3xl border bg-muted/10 p-4">
+                <div className="text-sm font-semibold">
+                  {language === 'uz' ? "To'lov izohi" : 'Payment note'}
+                </div>
+                <div className="mt-2 text-sm font-medium break-words whitespace-pre-wrap">
+                  {purchase.notes}
                 </div>
               </div>
-            </div>
+            ) : null}
 
             <div className="space-y-3">
               <div className="text-sm font-semibold">
