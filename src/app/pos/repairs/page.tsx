@@ -132,8 +132,11 @@ export default function RepairsPage() {
       };
 
       const response = await listRepairs(params);
-      setRows((response.data ?? []).map(toRepairRow));
-      setTotal(response.meta?.total ?? response.data.length);
+      const visibleRepairs = (response.data ?? []).filter(
+        (repair) => repair.item?.status !== "READY_FOR_SALE",
+      );
+      setRows(visibleRepairs.map(toRepairRow));
+      setTotal(visibleRepairs.length);
     } catch (requestError) {
       if (requestError instanceof ApiRequestError && requestError.status === 401) {
         setError(
