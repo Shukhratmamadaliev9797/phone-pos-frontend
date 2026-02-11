@@ -32,13 +32,19 @@ export function SidebarContent({
   const dispatch = useAppDispatch();
 
   const isAdmin = role === "ADMIN" || role === "OWNER_ADMIN";
+  const isTechnician = role === "TECHNICIAN";
   const hiddenForNonAdmin = new Set(["/workers", "/reports", "/settings"]);
+  const hiddenForTechnician = new Set(["/customers"]);
   const visibleSections = isAdmin
     ? navSections
     : navSections
         .map((section) => ({
           ...section,
-          items: section.items.filter((item) => !hiddenForNonAdmin.has(item.href)),
+          items: section.items.filter(
+            (item) =>
+              !hiddenForNonAdmin.has(item.href) &&
+              !(isTechnician && hiddenForTechnician.has(item.href)),
+          ),
         }))
         .filter((section) => section.items.length > 0);
 
